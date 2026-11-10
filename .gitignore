@@ -23,3 +23,6 @@
 hs_err_pid*
 replay_pid*
 /bin/
+
+# Saved order history from running the app
+order_history.txt
