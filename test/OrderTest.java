@@ -27,7 +27,15 @@ public class OrderTest {
 
     @Test(expected = IllegalStateException.class)
     public void skippingStageThrows() {
+        try {
         order.setStatus(OrderStatus.READY);
+        fail("Skipping directly to READY should throw an exception");
+    }
+    catch (IllegalStateException expected) {
+        // The expected exception was thrown.
+    }
+
+    assertEquals(OrderStatus.WAITING, order.getStatus());
     }
 
     @Test(expected = IllegalStateException.class)
