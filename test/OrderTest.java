@@ -3,11 +3,13 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 /**
- * Tests order data, status changes, constructor validation, and copying.
+ * Tests order data, status changes, constructor validation,
+ * restoring orders, and copying.
  */
 public class OrderTest {
 
-    private final Order order = new Order(15, "12345", "Pizza", 2, true);
+    private final Order order =
+        new Order(15, "12345", "Pizza", 2, true);
 
     @Test
     public void gettersReturnFields() {
@@ -24,67 +26,56 @@ public class OrderTest {
         order.setStatus(OrderStatus.BEING_MADE);
         assertEquals(OrderStatus.BEING_MADE, order.getStatus());
 
-        order.setStatus(OrderStatus.BEING_MADE);
-        assertEquals(OrderStatus.BEING_MADE, order.getStatus());
-
         order.setStatus(OrderStatus.READY);
         assertEquals(OrderStatus.READY, order.getStatus());
     }
 
     @Test
-    public void skippingStageThrows() {
+    public void skippingStageThrowsAndKeepsStatus() {
+        assertEquals(OrderStatus.WAITING, order.getStatus());
+
         try {
             order.setStatus(OrderStatus.READY);
-            fail("Skipping directly to READY should throw an exception");
+            fail("Skipping directly to READY should throw");
         }
         catch (IllegalStateException expected) {
-            // Expected: an order cannot skip BEING_MADE.
+            // Expected exception.
         }
 
         assertEquals(OrderStatus.WAITING, order.getStatus());
     }
 
     @Test
-    public void movingBackwardThrows() {
+    public void movingBackwardThrowsAndKeepsStatus() {
         order.setStatus(OrderStatus.BEING_MADE);
 
         try {
             order.setStatus(OrderStatus.WAITING);
-            fail("Moving backward to WAITING should throw an exception");
+            fail("Moving backward should throw");
         }
         catch (IllegalStateException expected) {
-            // Expected: an order cannot move backward.
+            // Expected exception.
         }
 
         assertEquals(OrderStatus.BEING_MADE, order.getStatus());
     }
 
     @Test
-    public void nullStatusThrows() {
+    public void nullStatusThrowsAndKeepsStatus() {
         for (OrderStatus stage : OrderStatus.values()) {
-            order.setStatus(stage);
+            Order testOrder = new Order(
+                15, "12345", "Pizza", 2, true, stage);
 
             try {
-                order.setStatus(null);
-                fail("A null status should throw an exception at " + stage);
+                testOrder.setStatus(null);
+                fail("Null status should throw");
             }
             catch (IllegalArgumentException expected) {
-                // Expected: null is not a valid status.
+                // Expected exception.
             }
 
-            assertEquals(stage, order.getStatus());
+            assertEquals(stage, testOrder.getStatus());
         }
-    }
-
-    @Test
-    public void copyIsDetached() {
-        Order copy = new Order(order);
-        assertNotSame(order, copy);
-
-        copy.setStatus(OrderStatus.BEING_MADE);
-
-        assertEquals(OrderStatus.BEING_MADE, copy.getStatus());
-        assertEquals(OrderStatus.WAITING, order.getStatus());
     }
 
     @Test
@@ -97,10 +88,18 @@ public class OrderTest {
     }
 
     @Test
+    public void repeatingBeingMadeDoesNotChangeStatus() {
+        order.setStatus(OrderStatus.BEING_MADE);
+
+        order.setStatus(OrderStatus.BEING_MADE);
+
+        assertEquals(OrderStatus.BEING_MADE, order.getStatus());
+    }
+
+    @Test
     public void repeatingReadyDoesNotChangeStatus() {
         order.setStatus(OrderStatus.BEING_MADE);
         order.setStatus(OrderStatus.READY);
-        assertEquals(OrderStatus.READY, order.getStatus());
 
         order.setStatus(OrderStatus.READY);
 
@@ -114,10 +113,10 @@ public class OrderTest {
 
         try {
             order.setStatus(OrderStatus.WAITING);
-            fail("Moving from READY to WAITING should throw an exception");
+            fail("READY to WAITING should throw");
         }
         catch (IllegalStateException expected) {
-            // Expected: a ready order cannot return to WAITING.
+            // Expected exception.
         }
 
         assertEquals(OrderStatus.READY, order.getStatus());
@@ -130,10 +129,10 @@ public class OrderTest {
 
         try {
             order.setStatus(OrderStatus.BEING_MADE);
-            fail("Moving from READY to BEING_MADE should throw an exception");
+            fail("READY to BEING_MADE should throw");
         }
         catch (IllegalStateException expected) {
-            // Expected: a ready order cannot return to BEING_MADE.
+            // Expected exception.
         }
 
         assertEquals(OrderStatus.READY, order.getStatus());
@@ -149,12 +148,23 @@ public class OrderTest {
         new Order(15, "", "Pizza", 2, true);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void constructorRejectsBlankStudentId() {
+        new Order(15, "   ", "Pizza", 2, true);
+    }
+
     @Test
     public void restoredOrderKeepsSuppliedStatus() {
         for (OrderStatus stage : OrderStatus.values()) {
-            Order restored = new Order(15, "12345", "Pizza", 2, true, stage);
+            Order restored = new Order(
+                15, "12345", "Pizza", 2, true, stage);
 
             assertEquals(stage, restored.getStatus());
+            assertEquals(15, restored.getOrderNum());
+            assertEquals("12345", restored.getStudentId());
+            assertEquals("Pizza", restored.getItem());
+            assertEquals(2, restored.getQty());
+            assertTrue(restored.isMobile());
         }
     }
 
@@ -164,9 +174,30 @@ public class OrderTest {
     }
 
     @Test
+    public void copyIsDetached() {
+        Order copy = new Order(order);
+
+        assertNotSame(order, copy);
+        assertEquals(order.getOrderNum(), copy.getOrderNum());
+        assertEquals(order.getStudentId(), copy.getStudentId());
+        assertEquals(order.getItem(), copy.getItem());
+        assertEquals(order.getQty(), copy.getQty());
+        assertEquals(order.isMobile(), copy.isMobile());
+        assertEquals(order.getStatus(), copy.getStatus());
+
+        copy.setStatus(OrderStatus.BEING_MADE);
+
+        assertEquals(OrderStatus.BEING_MADE, copy.getStatus());
+        assertEquals(OrderStatus.WAITING, order.getStatus());
+    }
+
+    @Test
     public void changingOriginalDoesNotChangeCopy() {
         order.setStatus(OrderStatus.BEING_MADE);
+
         Order copy = new Order(order);
+
+        assertNotSame(order, copy);
         assertEquals(OrderStatus.BEING_MADE, copy.getStatus());
 
         order.setStatus(OrderStatus.READY);
@@ -175,3 +206,4 @@ public class OrderTest {
         assertEquals(OrderStatus.BEING_MADE, copy.getStatus());
     }
 }
+
