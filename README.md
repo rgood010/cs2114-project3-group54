@@ -275,9 +275,9 @@ the MVP.
 |---|---|---|
 | `src/LinkedQueue.java` | Jonathan | Wrote the first version (linked nodes, enqueue/dequeue/isEmpty/size). Finished with GenAI (peek, null checks, iterator). Reviewed. |
 | `src/DiningHallModel.java` | Jonathan | Wrote the initial field stub. GenAI-assisted implementation from our spec. Reviewed. |
-| `src/Order.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderStatus.java` | Jonathan | GenAI-assisted from the spec. |
-| `src/OrderListener.java` | Jonathan | GenAI-assisted from the spec. |
+| `src/Order.java` | Isabella | GenAI-assisted from the spec. Reviewed. |
+| `src/OrderStatus.java` | Isabella | GenAI-assisted from the spec. |
+| `src/OrderListener.java` | Isabella | GenAI-assisted from the spec. |
 | `src/Menu.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
 | `src/OrderHistory.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
 | `src/OrderController.java` | Ryan | Generated with GenAI from the spec. Ryan reviewed it. |
@@ -291,8 +291,8 @@ the MVP.
 | `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
 | `test/OrderTest.java` | Isabella, Jonathan | Jonathan: GenAI-assisted first version. Isabella: expanded, restructured and added the stage-skipping exception tests. |
 | `test/MenuTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
-| `test/OrderHistoryTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
-| `test/DiningHallModelTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
+| `test/OrderHistoryTest.java` | Isabella | GenAI-assisted from the spec test plan. Ran it. |
+| `test/DiningHallModelTest.java` | Isabella | GenAI-assisted from the spec test plan. Ran it. |
 | `test/OrderControllerTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
 | `test/ViewTest.java` | Jonathan | GenAI-assisted. Ran it. |
 
