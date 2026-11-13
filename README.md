@@ -280,12 +280,12 @@ the MVP.
 | `src/OrderListener.java` | Jonathan | GenAI-assisted from the spec. |
 | `src/Menu.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
 | `src/OrderHistory.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderController.java` | Ryan, Jonathan | Jonathan generated it with GenAI from the spec. Ryan reviewed it. |
-| `src/OrderFormView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
-| `src/KioskView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
-| `src/MobileView.java` | Ryan, Jonathan | Jonathan generated it with GenAI. Ryan reviewed it. |
-| `src/StatusBoardView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
-| `src/GrubHubApp.java` | Ryan, Jonathan | Jonathan generated it with GenAI. Ryan reviewed it and ran the MVP path by hand. |
+| `src/OrderController.java` | Ryan | Generated with GenAI from the spec. Ryan reviewed it. |
+| `src/OrderFormView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
+| `src/KioskView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
+| `src/MobileView.java` | Ryan | Generated with GenAI. Ryan reviewed it. |
+| `src/StatusBoardView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
+| `src/GrubHubApp.java` | Ryan | Generated with GenAI. Ryan reviewed it and ran the MVP path by hand. |
 | `src/ModelDriver.java` | Jonathan | GenAI-assisted. Ran it. |
 | `src/RyanTest.java` | Ryan | Wrote it while setting up the Eclipse Java project (`.project`, `.classpath`). |
 | `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
