@@ -1,6 +1,6 @@
-# cs2114-project3-group54 — GrubHub
+# cs2114-project3-group54 — Hungry Hokies (GrubHub)
 
-GrubHub is a dining hall ordering system. Students order from a walk-in **kiosk**
+Hungry Hokies is a dining hall pickup-line ordering system. Students order from a walk-in **kiosk**
 or the **mobile** app. Each hall's kitchen starts orders using a fairness rule
 (up to 3 mobile orders in a row, then 1 walk-in), makes them, and moves them to
 pickup. A **status board** shows the line and the ready orders. Order history is
@@ -103,6 +103,15 @@ bad input being rejected.
   (as in `ModelDriver` and the tests).
 - Non-numeric quantity (`"abc"`) is caught in the view (`NumberFormatException`)
   and re-prompted before the controller is called, as the spec planned.
+- **The bad input named in our scope**, and how we handle it:
+  | Scope said | What happens now |
+  |---|---|
+  | Sold-out item → "Not available", let the user pick something else | `OrderController` checks `isInStock` first and the model throws `IllegalStateException` as a backup. The message starts with **"Not available:"** and the view asks for the order again. |
+  | More than 20 → "Invalid input: Re-enter input", prompt to retype | `OrderController` checks 1–20 first and the model throws `IllegalArgumentException` as a backup. The message starts with **"Invalid input: Re-enter input"** and the view asks again. A quantity that isn't a number gets the same message from the view. |
+
+  We also reject things the scope didn't mention: unknown items, quantity 0 or
+  less, a blank student ID, an unknown hall, an unknown order number, starting
+  an order when the kitchen is full, and a malformed history file.
 
 **Wait-time rule**
 - The spec referred to "the rule in Section 4", but that section was never
@@ -142,14 +151,23 @@ Two compromises we're aware of:
 Nothing had to move across the model/view line to make the program run.
 
 ### What happened to our unknowns
+Our scope said we didn't yet know *"the model view controller stuff and probably
+the testing relating to it,"* and that we hadn't built our own queue inside a
+project before.
+
+| Unknown from the scope | Status |
+|---|---|
+| **Model-view-controller** | **Figured out.** The model (`DiningHallModel` and its helpers) holds all state and logic. The views only display and read input. `OrderController` connects them. The observer pattern (`OrderListener`) keeps every screen up to date without the model knowing about any view class. See "Did the model really stand alone?" above. |
+| **Testing with MVC** | **Mostly figured out.** The model is tested with no view (`DiningHallModelTest` and the other model tests, plus `ModelDriver`). The controller is tested against real models. Views take a `Scanner`/`PrintStream`, so `ViewTest` can type input and read output. **Still open:** the menu loop in `GrubHubApp` has no tests, and we don't yet know how we'll test a GUI. |
+| **Building our own queue in a project** | **Figured out.** `LinkedQueue<T>` is the singly linked FIFO queue the scope described, with constant-time add at the back and remove at the front. We added `Iterable` so the model can read the line without changing it. |
+
+Questions that came up later while writing the spec:
+
 | Unknown | Status |
 |---|---|
 | How to compute a position when two lines feed one kitchen | **Figured out.** The model copies both lines and simulates the fairness rule to get the predicted order (`predictedLine()`). |
-| How to estimate wait time | **Figured out (our own rule).** The sequential formula above. It's still a simplification, because a real kitchen makes `kitchenCapacity` orders in parallel. |
+| How to estimate wait time across both lines | **Figured out (our own rule).** The sequential formula above. It's still a simplification, because a real kitchen makes `kitchenCapacity` orders in parallel. |
 | How to keep order history between runs | **Figured out.** A tab-separated text file. The whole file is validated before the history is replaced. |
-| How several screens stay in sync | **Figured out.** The observer pattern (`OrderListener`), as specified. |
-| How to keep the model testable without a UI | **Figured out.** Views take a `Scanner`/`PrintStream`, so tests can feed them input. The model needs neither. |
-| GUI | **Still open.** Deferred. The prototype is terminal-only on purpose. |
 
 ### What doesn't work yet
 - **No pickup.** Ready orders stay in `readyQueue` forever. The spec notes there
@@ -164,9 +182,12 @@ Nothing had to move across the model/view line to make the program run.
   terminal gets noisy.
 - **Wait time ignores parallel cooking**, as described above.
 - **No tests for `GrubHubApp`'s menu loop.** It is only checked by running it.
+- **Scope stretch goals not built yet:** most-ordered items, total spending,
+  color-coded status and the GUI (see Next Steps).
 - All 77 existing tests pass. No known crash on the MVP path or on the bad-input
-  cases from our scope (sold-out item, quantity over 20, non-numeric
-  quantity, unknown hall, unknown order number).
+  cases from our scope (sold-out item, quantity over 20). The same goes for the
+  extra cases we added (non-numeric quantity, unknown item, hall or order
+  number).
 
 ---
 
@@ -207,12 +228,20 @@ change shows up in history without any edits there. If either of those turns
 out wrong, we'll record it in Deliverable 4.
 
 ### Stretch goals
-| Goal | Decision |
-|---|---|
-| Persistent order history, order status pipeline, mobile order scheduling | Already built. These moved from stretch to MVP in the spec. |
-| Pickup / clearing ready orders | **Committing.** It's MVP step 1 above. |
-| GUI view (a new `OrderListener` + controller calls, with no model changes) | **Committing if time allows** after the change feature. It's the best test of our MVC design. |
-| Second status board / parallel-kitchen wait times | **Dropping** for now. |
+These are the stretch goals from our scope. The spec moved the first three into
+the MVP.
+
+| Scope stretch goal | Built so far | Decision |
+|---|---|---|
+| **Persistent Order History:** save by student ID, reorder last meal | Built (`OrderHistory.save/load`, `reorderLast`) | Done |
+| …view most-ordered items | Not built | **Committing.** Small change: one new `OrderHistory` method plus a controller method and a view method. |
+| …see total spending | Not built | **Dropping.** Menu items have no prices, so we'd have to add prices to `Menu`, `Order` and the save file. |
+| **Mobile Order Scheduling:** two FIFO lines, 3 mobile then 1 in-person, wait times use both lines | Built | Done |
+| **Order Status Pipeline:** waiting → being made → ready, kitchen limit, look up by order number | Built | Done |
+| …color-coded status | Not built (terminal only) | **Committing with the GUI.** |
+| **GUI:** separate in-person and mobile screens, plus a pickup display | Not built | **Committing if time allows**, after the change feature. Each screen would be a new `OrderListener` view calling the same controller, so the model shouldn't need changes. That makes it the best test of our MVC design. |
+| Pickup / clearing ready orders (not in scope; we found it while building) | Not built | **Committing.** It's MVP step 1 above. |
+| Second status board / parallel-kitchen wait times (came up in the spec) | Not built | **Dropping** for now. |
 
 ### New tests needed
 - `LinkedQueueTest`: `remove` at the front, middle and rear; removing the only
@@ -229,7 +258,7 @@ out wrong, we'll record it in Deliverable 4.
 - `ViewTest`: non-numeric order number re-prompts.
 - Tests for the pickup and save-after-each-order changes.
 
-### Who does what (
+### Who does what
 | Item | Owner |
 |---|---|
 | `LinkedQueue.remove` + tests | Jonathan |
@@ -251,12 +280,12 @@ out wrong, we'll record it in Deliverable 4.
 | `src/OrderListener.java` | Jonathan | GenAI-assisted from the spec. |
 | `src/Menu.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
 | `src/OrderHistory.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderController.java` | Ryan | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderFormView.java` | Shelby | GenAI-assisted. Reviewed. |
-| `src/KioskView.java` | Shelby | GenAI-assisted. Reviewed. |
-| `src/MobileView.java` | Ryan | GenAI-assisted. Reviewed. |
-| `src/StatusBoardView.java` | Shelby | GenAI-assisted. Reviewed. |
-| `src/GrubHubApp.java` | Ryan | GenAI-assisted. Ran the MVP path by hand. |
+| `src/OrderController.java` | Ryan, Jonathan | Jonathan generated it with GenAI from the spec. Ryan reviewed it. |
+| `src/OrderFormView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
+| `src/KioskView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
+| `src/MobileView.java` | Ryan, Jonathan | Jonathan generated it with GenAI. Ryan reviewed it. |
+| `src/StatusBoardView.java` | Shelby, Jonathan | Jonathan generated it with GenAI. Shelby reviewed it. |
+| `src/GrubHubApp.java` | Ryan, Jonathan | Jonathan generated it with GenAI. Ryan reviewed it and ran the MVP path by hand. |
 | `src/ModelDriver.java` | Jonathan | GenAI-assisted. Ran it. |
 | `src/RyanTest.java` | Ryan | Wrote it while setting up the Eclipse Java project (`.project`, `.classpath`). |
 | `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
@@ -266,7 +295,6 @@ out wrong, we'll record it in Deliverable 4.
 | `test/DiningHallModelTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
 | `test/OrderControllerTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
 | `test/ViewTest.java` | Jonathan | GenAI-assisted. Ran it. |
-
 
 **GenAI note:** We used Claude (Anthropic) in Claude Code. We gave it our
 Deliverable 2 specification and our partial `LinkedQueue`, and it wrote most of
