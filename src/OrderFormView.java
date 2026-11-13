@@ -82,9 +82,8 @@ public abstract class OrderFormView implements OrderListener {
                     qty = Integer.parseInt(quantityText);
                 }
                 catch (NumberFormatException e) {
-                    out.println("\"" + quantityText
-                        + "\" is not a whole number. Please re-enter the "
-                        + "quantity.");
+                    out.println("Invalid input: Re-enter input (\""
+                        + quantityText + "\" is not a whole number).");
                 }
             }
             controller.placeOrder(itemText, qty, isMobile());

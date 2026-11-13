@@ -267,14 +267,15 @@ public class OrderController {
                 + "item.");
             return;
         }
+        // Messages for the two bad-input cases use our scope doc's wording.
         if (!selectedHall.isInStock(item)) {
-            fail("Sorry, " + item.trim() + " is sold out. Please pick "
-                + "another item.");
+            fail("Not available: " + item.trim() + " is sold out. Please "
+                + "pick another item.");
             return;
         }
         if (qty < 1 || qty > DiningHallModel.MAX_QTY) {
-            fail("Quantity must be between 1 and " + DiningHallModel.MAX_QTY
-                + ". Please re-enter your quantity.");
+            fail("Invalid input: Re-enter input (quantity must be between 1 "
+                + "and " + DiningHallModel.MAX_QTY + ").");
             return;
         }
         try {
@@ -283,8 +284,8 @@ public class OrderController {
             succeed("Order #" + num + " placed. " + lookupStatus(num));
         }
         catch (IllegalStateException e) {
-            fail("Sorry, " + item.trim() + " is sold out. Please pick "
-                + "another item.");
+            fail("Not available: " + item.trim() + " is sold out. Please "
+                + "pick another item.");
         }
         catch (IllegalArgumentException e) {
             fail(e.getMessage() + ". Please try again.");
