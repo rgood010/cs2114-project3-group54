@@ -164,6 +164,10 @@ public class OrderController {
         }
         try {
             OrderStatus status = selectedHall.getStatus(orderNum);
+            if (status == OrderStatus.CANCELLED) {
+                return "Order #" + orderNum + " at "
+                    + selectedHall.getHallName() + ": CANCELLED";
+            }
             int position = selectedHall.getPosition(orderNum);
             int wait = selectedHall.getWaitTime(orderNum);
             return "Order #" + orderNum + " at " + selectedHall.getHallName()
@@ -203,6 +207,29 @@ public class OrderController {
         }
         // 'last' is a detached copy; a brand new order is placed from it.
         submit(activeStudentId, last.getItem(), last.getQty(), mobileSession);
+    }
+
+    /**
+     * Cancels one of this session student's WAITING orders at the selected
+     * hall. Problems are reported through {@link #getLastMessage()}.
+     *
+     * @param orderNum the order to cancel
+     */
+    public void cancelOrder(int orderNum) {
+        if (selectedHall == null) {
+            fail("Select a dining hall first.");
+            return;
+        }
+        try {
+            selectedHall.cancelOrder(orderNum, activeStudentId);
+            succeed("Order #" + orderNum + " cancelled.");
+        }
+        catch (IllegalArgumentException e) {
+            fail("Order not found.");
+        }
+        catch (IllegalStateException e) {
+            fail(e.getMessage() + ".");
+        }
     }
 
     /** Kitchen: starts the next waiting order at the selected hall. */

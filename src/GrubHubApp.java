@@ -111,6 +111,9 @@ public class GrubHubApp {
                         out.println(controller.getLastMessage());
                     }
                     break;
+                case "11":
+                    orderView.cancelOrder();
+                    break;
                 case "10":
                     String hall = controller.getSelectedHall() == null ? null
                         : controller.getSelectedHall().getHallName();
@@ -144,7 +147,7 @@ public class GrubHubApp {
         out.println(" 5) Look up order status    6) Show status board");
         out.println(" 7) Kitchen: start next     8) Kitchen: finish order");
         out.println(" 9) Kitchen: mark sold out 10) New student session");
-        out.println(" 0) Save and quit");
+        out.println("11) Cancel my waiting order  0) Save and quit");
     }
 
     private boolean startSession() {

@@ -1,6 +1,7 @@
 /**
  * MODEL. A single food order. Everything except the status is fixed; the
- * status only moves forward WAITING -> BEING_MADE -> READY.
+ * status only moves forward WAITING -> BEING_MADE -> READY, except that a
+ * WAITING order may be CANCELLED.
  */
 public class Order {
 
@@ -90,11 +91,14 @@ public class Order {
     }
 
     /**
-     * Moves the order to the next stage.
+     * Moves the order to the next stage, or cancels a waiting order.
      *
      * @param s the new status
      * @throws IllegalArgumentException if s is null
-     * @throws IllegalStateException    if s skips a stage or moves backward
+     * @throws IllegalStateException    if s skips a stage or moves backward,
+     *                                  if s is CANCELLED and the order is not
+     *                                  WAITING, or if the order is already
+     *                                  CANCELLED
      */
     public void setStatus(OrderStatus s) {
         if (s == null) {
@@ -103,7 +107,15 @@ public class Order {
         if (s == status) {
             return;
         }
-        if (s.ordinal() != status.ordinal() + 1) {
+        boolean allowed;
+        if (s == OrderStatus.CANCELLED) {
+            allowed = status == OrderStatus.WAITING;
+        }
+        else {
+            allowed = status != OrderStatus.CANCELLED
+                && s.ordinal() == status.ordinal() + 1;
+        }
+        if (!allowed) {
             throw new IllegalStateException(
                 "Cannot move order from " + status + " to " + s);
         }

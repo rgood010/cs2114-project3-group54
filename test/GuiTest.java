@@ -143,10 +143,10 @@ public class GuiTest {
     @Test
     public void lookUpHandlesBadAndUnknownNumbers() throws Exception {
         KioskPanel kiosk = new KioskPanel(controller("1", false));
-        kiosk.getLookupField().setText("x");
+        kiosk.getOrderNumField().setText("x");
         kiosk.lookUp();
         assertEquals("Order numbers are whole numbers.", kiosk.getMessage());
-        kiosk.getLookupField().setText("999");
+        kiosk.getOrderNumField().setText("999");
         kiosk.lookUp();
         assertEquals("Order not found.", kiosk.getMessage());
     }
@@ -268,5 +268,43 @@ public class GuiTest {
         finally {
             gui.dispose();
         }
+    }
+
+    // ------------------------------------------- cancel a waiting order (D4)
+
+    @Test
+    public void cancelButtonCancelsAndBoardDropsOrder() throws Exception {
+        OrderController c = controller("1", false);
+        KioskPanel kiosk = new KioskPanel(c);
+        StatusBoardPanel board = new StatusBoardPanel(c);
+        order(kiosk, "Burger", "1");
+        int num = c.getLastOrderNum();
+        kiosk.getOrderNumField().setText(String.valueOf(num));
+        kiosk.cancelOrder();
+        flush();
+        assertEquals("Order #" + num + " cancelled.", kiosk.getMessage());
+        assertTrue(kiosk.getStatusText().endsWith("CANCELLED"));
+        assertEquals("No orders in line.", board.getLineRows().get(0));
+    }
+
+    @Test
+    public void cancelButtonRejectsBadNumbers() throws Exception {
+        KioskPanel kiosk = new KioskPanel(controller("1", false));
+        kiosk.getOrderNumField().setText("abc");
+        kiosk.cancelOrder();
+        assertTrue(kiosk.getMessage().startsWith("Invalid input: Re-enter "
+            + "input"));
+        kiosk.getOrderNumField().setText("999");
+        kiosk.cancelOrder();
+        assertEquals("Order not found.", kiosk.getMessage());
+    }
+
+    @Test
+    public void menuDropdownReadsModelLive() throws Exception {
+        OrderController c = controller("1", false);
+        KitchenPanel kitchen = new KitchenPanel(c);
+        north.markSoldOut("Pizza"); // straight on the model
+        flush();
+        assertEquals(2, kitchen.getSoldOutBox().getItemCount());
     }
 }

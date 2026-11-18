@@ -1,331 +1,365 @@
 # cs2114-project3-group54 — Hungry Hokies (GrubHub)
 
-Hungry Hokies is a dining hall pickup-line ordering system. Students order from a walk-in **kiosk**
-or the **mobile** app. Each hall's kitchen starts orders using a fairness rule
-(up to 3 mobile orders in a row, then 1 walk-in), makes them, and moves them to
-pickup. A **status board** shows the line and the ready orders. Order history is
-saved to a file so a student can reorder their last meal.
+Hungry Hokies is a dining hall pickup-line ordering system. Students order from
+a walk-in **kiosk** or the **mobile** app. Each hall's kitchen starts orders
+using a fairness rule (up to 3 mobile orders in a row, then 1 walk-in), makes
+them, and moves them to pickup. A **status board** shows the line and the ready
+orders. Order history is saved to a file so a student can reorder their last
+meal.
 
-**Deliverable 3 — First Prototype.** The core logic sits in a queue-backed model
-that runs without any view. A thin terminal view and a controller sit on top of
-it. A Swing GUI (`GrubHubGUI`) now sits on the same controller and model.
+**Deliverable 4 — Second Prototype + Tests.** The Swing GUI is connected to the
+model through the controller. Our change feature, **cancel a waiting order**,
+runs from the queue up to both the GUI and the terminal view. 137 JUnit tests
+pass.
 
 ---
 
 ## How to run
 
-All source is in `src/`. JUnit 4 tests are in `test/`. In Eclipse, `.classpath`
-already includes `test/` and the JUnit 4 library.
+All source is in `src/` and all JUnit 4 tests are in `test/`. Everything is
+in the default package. In Eclipse, `.classpath` already includes `test/` and
+the JUnit 4 library.
 
-### 1. The model by itself (driver, no view)
-`ModelDriver` creates a `DiningHallModel` and calls it directly. It uses no
-view, no controller and no keyboard input. It places mobile and walk-in orders,
-runs the kitchen, prints each order's status, position and wait, and shows
-bad input being rejected.
-
-- **Eclipse:** right-click `src/ModelDriver.java` → *Run As → Java Application*.
-- **Terminal** (from the repo folder):
-  ```bash
-  javac -d bin src/*.java && java -cp bin ModelDriver
-  ```
-
-### 2. The model through tests (no view)
-- **Eclipse:** right-click the `test` folder → *Run As → JUnit Test*.
-- `DiningHallModelTest`, `LinkedQueueTest`, `OrderTest`, `MenuTest` and
-  `OrderHistoryTest` test the model alone. `OrderControllerTest` and `ViewTest`
-  test the layers above it. `GuiTest` tests the Swing panels. There are 94
-  tests and all of them pass (the panel tests also pass headless).
-
-### 3. The thin terminal view
-`GrubHubApp` is the full program. View → controller → model.
-
-- **Eclipse:** right-click `src/GrubHubApp.java` → *Run As → Java Application*,
-  then type in the Console.
-- **Terminal:**
-  ```bash
-  javac -d bin src/*.java && java -cp bin GrubHubApp
-  ```
-- **MVP path to try:** enter a student ID → `k` (kiosk) → `1` and type
-  `North Dining Hall` → `2` show menu → `3` order `Pizza`, qty `2` → `7`
-  start the order → `8` finish it → `5` look up the order number → `0`
-  save and quit. Run it again and choose `4` to reorder your last order.
-
-### 4. The Swing GUI
-`GrubHubGUI` opens one window with the order form (kiosk or mobile), the
-kitchen controls and the color-coded status board side by side. It uses the
-same model and controller as the terminal app.
+### 1. The GUI (main program)
+`GrubHubGUI` opens one window: the order form (kiosk or mobile) and the
+kitchen controls on the left, and the color-coded status board on the right.
 
 - **Eclipse:** right-click `src/GrubHubGUI.java` → *Run As → Java Application*.
-- **Terminal:**
+- **Terminal** (from the repo folder):
   ```bash
   javac -d bin src/*.java && java -cp bin GrubHubGUI
   ```
-- Enter a student ID and pick kiosk or mobile. Then choose a dining hall at the
-  top, order, and use the Kitchen buttons to start and finish orders. The
-  status board and "Your order" line update by themselves. History is saved
-  when you close the window.
+- **Try it:**
+  1. Enter a student ID and pick *Kiosk* or *Mobile*.
+  2. Order `Pizza` with quantity `2`, then `Fries` and `Salad`.
+  3. Type an order number in **Order #** and click **Cancel order**. That
+     order leaves the line and everyone behind it moves up.
+  4. Use **Start next order** and **Finish order**. The board and the
+     "Your order" line update by themselves.
+
+  History is saved to `order_history.txt` when you close the window.
+
+### 2. The tests
+- **Eclipse:** right-click the `test` folder → *Run As → JUnit Test*.
+- **Terminal** (the JUnit and Hamcrest jars ship with Eclipse; set `J` and `H`
+  to their paths):
+  ```bash
+  javac -d bin -cp "$J" src/*.java test/*.java && java -cp "bin:$J:$H" org.junit.runner.JUnitCore LinkedQueueTest OrderTest MenuTest OrderHistoryTest DiningHallModelTest OrderControllerTest ViewTest GuiTest
+  ```
+- There are **137 tests and all of them pass.** The model tests
+  (`LinkedQueueTest`, `OrderTest`, `MenuTest`, `OrderHistoryTest`,
+  `DiningHallModelTest`) use no view or controller. `GuiTest` also passes with
+  `-Djava.awt.headless=true`.
+
+### 3. The terminal version and the model-only driver
+- `GrubHubApp` is the same program in the terminal (option `11` cancels an
+  order).
+  ```bash
+  javac -d bin src/*.java && java -cp bin GrubHubApp
+  ```
+- `ModelDriver` runs the model with no view or controller at all.
+  ```bash
+  javac -d bin src/*.java && java -cp bin ModelDriver
+  ```
 
 ### Layout (MVC)
 | Role | Classes |
 |---|---|
 | Model | `DiningHallModel`, `LinkedQueue<T>`, `Order`, `OrderStatus`, `Menu`, `OrderHistory`, `OrderListener` |
-| View (terminal) | `KioskView`, `MobileView` (both extend `OrderFormView`), `StatusBoardView` |
-| View (Swing) | `KioskPanel`, `MobilePanel` (both extend `OrderFormPanel`), `StatusBoardPanel`, `KitchenPanel` |
 | Controller | `OrderController` |
-| Entry points | `GrubHubApp` (builds the halls and runs the terminal menu), `GrubHubGUI` (Swing window), `ModelDriver` (model-only demo) |
+| View (Swing) | `KioskPanel`, `MobilePanel` (both extend `OrderFormPanel`), `StatusBoardPanel`, `KitchenPanel`, `MenuComboModel` (dropdown helper) |
+| View (terminal) | `KioskView`, `MobileView` (both extend `OrderFormView`), `StatusBoardView` |
+| Entry points | `GrubHubGUI` (Swing window), `GrubHubApp` (terminal menu; also builds the halls for both apps with `createHalls`), `ModelDriver` (model-only demo) |
+
+### How the view is connected to the model
+- **Actions go view → controller → model.** Each button calls one
+  `OrderController` method (`placeOrder`, `reorderLast`, `cancelOrder`,
+  `lookupStatus`, `startNextOrder`, `finishOrder`, `markSoldOut`). The
+  controller checks the input, calls the selected `DiningHallModel`, and
+  records a message the view shows.
+- **The model tells the views when it changes.** Every panel is an
+  `OrderListener`. After any change, the model calls `modelChanged()` and each
+  panel redraws on the Swing thread.
+- **The views keep no copy of model state.**
+  - The item dropdowns use `MenuComboModel`, and the board lists use
+    `BoardListModel`. Both ask the model for their rows every time Swing
+    draws, instead of holding their own lists.
+  - The "Your order" line and the kitchen counts are rebuilt from the model
+    on each change.
+  - The terminal `StatusBoardView` builds its rows when it prints them; it
+    used to cache them in two lists.
+  - The only thing a view remembers is view state: which item is selected,
+    what was typed, and the number of the order it placed, so it knows which
+    order to show.
 
 ### Rules as built
-- **Fairness:** the kitchen starts up to 3 mobile orders in a row, then 1 walk-in
-  if one is waiting. If one line is empty, it serves the other line.
+- **Fairness:** the kitchen starts up to 3 mobile orders in a row, then 1
+  walk-in if one is waiting. If one line is empty, it serves the other line.
 - **Wait time:** the kitchen finishes orders one at a time, taking
   `minutesPerOrder` each.
   - An order being made at kitchen index *i* (0-based) waits `(i + 1) × minutesPerOrder`.
   - A waiting order at predicted position *p* waits `(ordersBeingMade + p) × minutesPerOrder`.
-  - A ready order waits 0.
+  - A ready or cancelled order waits 0.
+- **Cancel (new in D4):**
+  - Only the student who placed an order can cancel it, and only while it is
+    `WAITING`.
+  - It is unlinked from its line (`LinkedQueue.remove`), and the order behind
+    it moves up.
+  - Its status becomes `CANCELLED`, and that is saved in history.
+  - The fairness counter doesn't change, because the order was never started.
 - **Quantity:** 1–20. Sold-out and unknown items are rejected.
-- **History** is loaded from `order_history.txt` at startup and saved there
-  on quit. New order numbers always exceed the largest restored number.
+- **History** is loaded from `order_history.txt` at startup and saved on quit.
+  New order numbers always exceed the largest restored number.
+
+### Bad input, and the test that covers each case
+Every case is rejected with a message, and the program keeps running. The
+controller checks first and gives a friendly message. The model checks again
+and throws, so it is safe even without the controller.
+
+| Bad input | What the user sees | Tests |
+|---|---|---|
+| Sold-out item *(scope)* | "Not available: Salad is sold out. Please pick another item." | `DiningHallModelTest.placeOrderSoldOutThrowsAndDoesNotNotify`, `OrderControllerTest.placeOrderSoldOutIsReported`, `GuiTest.soldOutItemIsRejected` |
+| Quantity over 20 *(scope)* | "Invalid input: Re-enter input (quantity must be between 1 and 20)." | `DiningHallModelTest.placeOrderQuantityOver20Throws`, `OrderControllerTest.placeOrderTooManyIsReported`, `ViewTest.mobileReadOrderRepromptsAfterRejection`, `GuiTest.quantityOverTwentyIsRejected` |
+| Quantity 0 | same message | `DiningHallModelTest.placeOrderQuantityZeroThrows` |
+| Quantity not a number ("abc") | "Invalid input: Re-enter input ("abc" is not a whole number)." | `ViewTest.kioskReadOrderRepromptsBadQuantity`, `GuiTest.nonNumberQuantityIsRejected` |
+| Unknown item | "… is not on the … menu" | `DiningHallModelTest.placeOrderUnknownItemThrows`, `OrderControllerTest.reorderLastItemNotAtThisHallIsReported` |
+| Blank student ID | rejected | `DiningHallModelTest.placeOrderBlankIdThrows` |
+| Unknown hall | previous hall stays selected | `OrderControllerTest.selectUnknownHallKeepsPrevious` |
+| Unknown or non-numeric order number in a lookup | "Order not found." / "Order numbers are whole numbers." | `DiningHallModelTest.getStatusUnknownThrows`, `GuiTest.lookUpHandlesBadAndUnknownNumbers` |
+| Reorder with no history, or for another student | message | `OrderControllerTest.reorderLastNoHistoryIsReported`, `OrderControllerTest.reorderLastWrongStudentIsReported` |
+| Kitchen full, or nothing to start or finish | message | `DiningHallModelTest.startNextOrderKitchenFullThrows`, `DiningHallModelTest.finishOrderEmptyThrows`, `OrderControllerTest.kitchenCommandsReportResults`, `GuiTest.kitchenReportsFullKitchenAndCounts` |
+| Malformed or missing history file | old history kept, message shown | `OrderHistoryTest.loadMalformedLeavesHistoryUnchanged`, `OrderHistoryTest.loadMissingFileThrows` |
+| **Cancel: order number not a number** *(new)* | "Invalid input: Re-enter input …" and re-prompt | `ViewTest.cancelRepromptsNonNumberThenCancels`, `GuiTest.cancelButtonRejectsBadNumbers` |
+| **Cancel: unknown order** *(new)* | "Order not found." | `DiningHallModelTest.cancelUnknownOrderThrows`, `OrderControllerTest.cancelUnknownOrderIsReported` |
+| **Cancel: someone else's order** *(new)* | "Order #n was placed by another student." | `DiningHallModelTest.cancelOtherStudentsOrderThrowsAndKeepsIt`, `OrderControllerTest.cancelOtherStudentsOrderIsReported` |
+| **Cancel: already being made, ready or cancelled** *(new)* | "Order #n is BEING_MADE and can no longer be cancelled." | `DiningHallModelTest.cancelBeingMadeOrderThrows`, `DiningHallModelTest.cancelTwiceThrows`, `OrderControllerTest.cancelOrderBeingMadeIsReported`, `OrderTest.readyOrderCannotBeCancelled` |
+| **Cancel: blank student ID, or no hall selected** *(new)* | rejected / "Select a dining hall first." | `DiningHallModelTest.cancelBlankStudentThrows`, `OrderControllerTest.cancelWithNoHallIsReported` |
+
+### Model and queue tests: one normal and one bad-input case per method
+| Class.method | Normal case | Bad-input case |
+|---|---|---|
+| `LinkedQueue.enqueue` | `enqueueAddsToRear` | `enqueueNullThrows` |
+| `LinkedQueue.dequeue` | `dequeueReturnsFrontAndRemovesIt` | `dequeueEmptyThrows` |
+| `LinkedQueue.peek` | `peekDoesNotRemove` | `peekEmptyThrows` |
+| `LinkedQueue.isEmpty/size` | `isEmptyAndSize` | (no input; the empty case is in the same test) |
+| `LinkedQueue.iterator` | `iteratesFrontToRear` | `iteratorPastEndThrows` |
+| `LinkedQueue.remove` *(new)* | `removeFront`, `removeMiddleLinksNeighbours`, `removeRearMovesRearBack`, `removeOnlyItemClearsBothEnds` | `removeNullThrows`, `removeMissingReturnsFalse` |
+| *Interleaved enqueue/dequeue* | `interleavedEnqueueDequeueKeepsFifoOrder`, `removeBetweenInterleavedOperations` | |
+| `Order` constructor | `gettersReturnFields` | `constructorRejectsBlankStudentId` (+ null and empty) |
+| `Order.setStatus` | `statusMovesForwardOneStage`, `waitingOrderCanBeCancelled` | `skippingStageThrowsAndKeepsStatus`, `nullStatusThrowsAndKeepsStatus`, `beingMadeOrderCannotBeCancelled`, `cancelledOrderCannotMoveOn` |
+| `Menu` constructor / `find` | `findReturnsCanonicalName` | `blankMenuItemThrows`, `findUnknownOrBlankReturnsNull` |
+| `Menu.inStock` / `markSoldOut` | `inStock` | `markUnknownSoldOutThrows`, `markNullSoldOutThrows` |
+| `OrderHistory.add` / `getLast` | `addAndGetLastReturnsDetachedCopy` | `addNullThrows`, `getLastNoHistoryThrows`, `getLastBlankIdThrows` |
+| `OrderHistory.save` / `load` | `saveThenLoadRoundTrips`, `cancelledStatusSurvivesSaveAndLoad` | `saveBlankPathThrows`, `loadMalformedLeavesHistoryUnchanged`, `loadMissingFileThrows` |
+| `OrderHistory.size` / `getLargestOrderNum` | `sizeCountsEveryOrder`, `newOrderNumbersExceedRestoredNumbers` | |
+| `DiningHallModel` constructor | (`setUp`) | `constructorRejectsBadArguments` |
+| `DiningHallModel.placeOrder` | `placeOrderQueuesRecordsAndNotifies` | `placeOrderQuantityOver20Throws`, `placeOrderSoldOutThrowsAndDoesNotNotify`, … |
+| `DiningHallModel.startNextOrder` | `startNextOrderMovesToBeingMade`, `fairnessThreeMobileThenOneWalkIn` | `startNextOrderKitchenFullThrows`, `startNextOrderNothingWaitingThrows` |
+| `DiningHallModel.finishOrder` | `finishOrderMovesFrontToReady` | `finishOrderEmptyThrows` |
+| `DiningHallModel.cancelOrder` *(new)* | `cancelRemovesOrderAndMovesLineUp`, `cancelledOrderIsNeverStarted`, `cancelKeepsFairnessCounter` | `cancelUnknownOrderThrows`, `cancelBlankStudentThrows`, `cancelOtherStudentsOrderThrowsAndKeepsIt`, `cancelBeingMadeOrderThrows`, `cancelTwiceThrows` |
+| `DiningHallModel.markSoldOut` | `markSoldOutNotifies` | `markSoldOutUnknownThrows` |
+| `DiningHallModel.getPosition` / `getWaitTime` / `getStatus` | `fairnessThreeMobileThenOneWalkIn`, `waitTimes` | `getPositionUnknownThrows`, `getWaitTimeUnknownThrows`, `getStatusUnknownThrows`, `orderAtOtherHallIsUnknownHere` |
+| `DiningHallModel.addListener` / `removeListener` | `addListenerTwiceNotifiesOnce`, `removeListenerStopsNotifications` | `addNullListenerThrows` |
+| `DiningHallModel` list getters | `listGettersReturnCopies` | |
+
+All of these are in the model test classes and call the model directly, not
+the UI. `OrderControllerTest`, `ViewTest` and `GuiTest` test the layers above.
 
 ---
 
 ## Reflection
 
-### What changed from our specification
+### How did our design absorb the change?
+The change feature is the one we named in our Deliverable 3 Next Steps:
+**cancel a waiting order.** We did not switch features.
 
-**Classes**
-| Spec said | We built | Why |
+**Classes the feature actually touched, compared with our D3 prediction**
+| Class | Predicted (D3) | What actually happened |
 |---|---|---|
-| `LinkedQueue<T>` with only `enqueue/dequeue/peek/isEmpty/size` | Same, plus it implements `Iterable<T>` (read-only front-to-rear walk) | `getPosition` and `getWaitTime` must look *inside* the lines without removing anything. Dequeuing and re-enqueuing everything just to read the line would be slow and error-prone. |
-| KioskView and MobileView as two separate classes | Both extend a shared abstract `OrderFormView` | The two forms were identical except for their label and the `mobile` flag. One base class removed about 100 duplicated lines. |
-| Root-level `diningHallModel.java`, `orderHistory,java` | `src/DiningHallModel.java`, `src/OrderHistory.java` | Eclipse only builds `src/`. Class names were fixed to match the spec, and the empty file with a comma in its name was removed. |
-| No entry point in the diagram | Added `GrubHubApp` and `ModelDriver` | We needed something that builds the halls and runs the program, plus a driver that runs the model without a view. |
+| `LinkedQueue<T>` | New `boolean remove(T item)` | **Matched.** `remove` unlinks a node anywhere and fixes `front`, `rear` and `count`. We also decided `remove(null)` throws, like `enqueue(null)`. |
+| `OrderStatus` | New `CANCELLED` | **Matched.** |
+| `Order` | `setStatus` allows `WAITING → CANCELLED` only | **Matched, with a surprise.** The old rule was "the new status must be the next ordinal". `CANCELLED` comes right after `READY`, so `READY → CANCELLED` would have passed that check. We had to make cancel its own rule, and also block any move *out* of `CANCELLED`. |
+| `DiningHallModel` | New `cancelOrder(orderNum, studentId)`; `getPosition`/`getWaitTime` handle `CANCELLED` | **Matched, but less work than expected.** `getPosition` already returned 0 for anything not `WAITING`, so it needed no change. Only `getWaitTime` needed one new `case`. The fairness counter also needed no change (tested in `cancelKeepsFairnessCounter`). |
+| `OrderController` | New `cancelOrder(orderNum)`; `lookupStatus` shows cancelled orders | **Matched.** |
+| `OrderFormView` (terminal) | New `cancelOrder()` | **Matched.** |
+| `GrubHubApp` | One new menu option | **Matched** (option `11`). |
+| `OrderFormPanel` (GUI) | Not predicted: the GUI didn't exist in D3 | **New in D4.** Added a **Cancel order** button next to **Look up**. The "Your order" line shows `CANCELLED` without position and wait. |
 
-**Method signatures**
-| Spec said | We built | Why |
-|---|---|---|
-| `OrderController.placeOrder(...)` returns `void` and "reports" errors to the view | Kept `void`. The controller records `getLastMessage()`, `lastActionSucceeded()` and `getLastOrderNum()` | A `void` method has no way to hand back a receipt or an error message. These getters let the view print the result and re-prompt without needing exceptions. |
-| `Order` had `getOrderNum/getStudentId/getItem/getStatus/setStatus` | Added `getQty()`, `isMobile()`, a copy constructor, and a package-private constructor that sets a status | Reorder needs the quantity and channel. Saving needs every field. `getLast` must return a *detached copy*. Loading has to restore a saved status. |
-| `Menu` had `getItems/inStock/markSoldOut` | Added `find(item)` | Makes item lookup case-insensitive and returns the menu's own spelling, so "pizza" matches "Pizza". |
-| `OrderHistory` had `add/getLast/save/load` | Added `getLargestOrderNum()` and `size()` | The model needs `getLargestOrderNum()` so new order numbers are larger than any restored number. |
-| `DiningHallModel` had the 7 diagram methods | Added `markSoldOut`, `removeListener`, and read-only queries: `getHallName`, `getMenuItems`, `isInStock`, `isOnMenu`, `getWaitingLine`, `getOrdersBeingMade`, `getReadyOrders`, `getKitchenCapacity` | The status board has to *list* orders, but the spec only had per-order lookups. The queries return **copies**, so a view can't change the real orders. |
-| Controller had 4 methods | Added `startNextOrder`, `finishOrder`, `markSoldOut`, `addListener/removeListener`, `getSelectedHall`, `getHallNames` | Without these, the user had no way to reach the kitchen actions. Views register through the controller, which adds them to every hall so they keep getting updates after the user switches halls. |
-| `reorderLast(studentId)` | Rejects an ID that isn't the session's student | Otherwise one student could reorder on someone else's account. |
+**Predicted *not* to change for the feature**
+- `KioskView`, `MobileView`, `Menu`, `OrderHistory` and `OrderListener` did
+  not change.
+- The GUI classes `KioskPanel` and `MobilePanel` did not change either. The
+  shared base class absorbed the feature for both channels, which is the
+  payoff we hoped for when we merged the two forms.
+- The status board dropped cancelled orders with **no code for cancelling**.
+  It redraws from the model on `modelChanged()`, and a cancelled order is no
+  longer in either line. This is tested in
+  `ViewTest.statusBoardDropsCancelledOrder` and
+  `GuiTest.cancelButtonCancelsAndBoardDropsOrder`.
+- `OrderHistory` saved the `CANCELLED` status with no edits. It holds the same
+  `Order` object, and `load` already used `OrderStatus.valueOf`. This is
+  tested in `cancelledStatusSurvivesSaveAndLoad`.
 
-**Where validation lives**
-- The spec's validation section said the model throws and the controller
-  catches. The boundary section said the controller rejects bad input *before*
-  calling the model. **We do both.** The controller checks the item, stock and
-  quantity first and gives a friendly message. The model checks everything
-  again and throws, so it is still safe when called without the controller
-  (as in `ModelDriver` and the tests).
-- Non-numeric quantity (`"abc"`) is caught in the view (`NumberFormatException`)
-  and re-prompted before the controller is called, as the spec planned.
-- **The bad input named in our scope**, and how we handle it:
-  | Scope said | What happens now |
-  |---|---|
-  | Sold-out item → "Not available", let the user pick something else | `OrderController` checks `isInStock` first and the model throws `IllegalStateException` as a backup. The message starts with **"Not available:"** and the view asks for the order again. |
-  | More than 20 → "Invalid input: Re-enter input", prompt to retype | `OrderController` checks 1–20 first and the model throws `IllegalArgumentException` as a backup. The message starts with **"Invalid input: Re-enter input"** and the view asks again. A quantity that isn't a number gets the same message from the view. |
+`StatusBoardView` and `StatusBoardPanel` *were* edited in D4, but not because
+of cancel. We removed their cached rows so the views keep no copy of model
+state (see "How the view is connected to the model").
 
-  We also reject things the scope didn't mention: unknown items, quantity 0 or
-  less, a blank student ID, an unknown hall, an unknown order number, starting
-  an order when the kitchen is full, and a malformed history file.
+**What surprised us:** the `Order` ordinal rule above, and how little
+`DiningHallModel` needed beyond the new method.
 
-**Wait-time rule**
-- The spec referred to "the rule in Section 4", but that section was never
-  written. We chose the sequential rule above and documented it in
-  `DiningHallModel`'s Javadoc so it can be changed in one place.
+### Did the change cross the model/view line?
+**No.** All of the cancel logic lives in the model:
+- who may cancel
+- which status allows it
+- removing the order from the line
+- the new positions and waits
 
-**Test cases**
-- The spec planned one normal and one bad case per method. We kept those and
-  added tests for:
-  - the 3-mobile/1-walk-in ordering
-  - wait times at each stage
-  - save → load round trip
-  - load of a malformed file leaving history unchanged
-  - order numbers above restored ones
-  - listener registered twice notified once
-  - views re-prompting on bad quantity
-- The test plan's example "order 5 is third in line with a 10-minute wait"
-  can't be true under our formula with an empty kitchen (third in line = 15
-  min). The tests use values that follow the formula we built.
+The views learned only two things:
+- one new controller method, `cancelOrder(int)`
+- that `CANCELLED` is a status worth showing differently (the order form hides
+  position and wait for it)
 
-### Did the model really stand alone?
-Yes. No model class imports or refers to a view or controller class. The model
-only knows `OrderListener`, which is an interface in the model layer. It never
-reads the keyboard or prints, and `ModelDriver` and the model tests run it with
-no view at all.
+No view touches a queue or decides whether a cancel is allowed. The model
+still imports no view or controller class, and every model test runs without
+one. The change did not ripple anywhere it shouldn't have.
 
-Two compromises we're aware of:
-- **Views read through the real model object.** Views call
-  `controller.getSelectedHall()` and use the model's read-only methods. The spec
-  allows this ("views can ask the model..."), but nothing in Java *stops* a view
-  from calling a mutating method. Only our convention prevents it. A read-only
-  interface would enforce it.
-- **The menu loop lives in `GrubHubApp`.** It handles both building the objects
-  and printing the menu. It should probably move into its own small view class
-  when the GUI is added.
+**A design change that would make the next feature cheaper:** move the
+transition rules into `OrderStatus` itself (for example
+`boolean canMoveTo(OrderStatus next)`, backed by a small table).
+- Our next feature, pickup, adds a `PICKED_UP` status. It would then be one
+  enum change instead of another special case in `Order.setStatus`. That
+  special case is exactly what surprised us this time.
+- A second improvement: give views a read-only interface for a hall instead of
+  the real `DiningHallModel`. A future view then *can't* call a mutating
+  method, even by accident.
 
-Nothing had to move across the model/view line to make the program run.
-
-### What happened to our unknowns
-Our scope said we didn't yet know *"the model view controller stuff and probably
-the testing relating to it,"* and that we hadn't built our own queue inside a
-project before.
-
-| Unknown from the scope | Status |
-|---|---|
-| **Model-view-controller** | **Figured out.** The model (`DiningHallModel` and its helpers) holds all state and logic. The views only display and read input. `OrderController` connects them. The observer pattern (`OrderListener`) keeps every screen up to date without the model knowing about any view class. See "Did the model really stand alone?" above. |
-| **Testing with MVC** | **Mostly figured out.** The model is tested with no view (`DiningHallModelTest` and the other model tests, plus `ModelDriver`). The controller is tested against real models. Views take a `Scanner`/`PrintStream`, so `ViewTest` can type input and read output. **Still open:** the menu loop in `GrubHubApp` has no tests, and we don't yet know how we'll test a GUI. |
-| **Building our own queue in a project** | **Figured out.** `LinkedQueue<T>` is the singly linked FIFO queue the scope described, with constant-time add at the back and remove at the front. We added `Iterable` so the model can read the line without changing it. |
-
-Questions that came up later while writing the spec:
-
-| Unknown | Status |
-|---|---|
-| How to compute a position when two lines feed one kitchen | **Figured out.** The model copies both lines and simulates the fairness rule to get the predicted order (`predictedLine()`). |
-| How to estimate wait time across both lines | **Figured out (our own rule).** The sequential formula above. It's still a simplification, because a real kitchen makes `kitchenCapacity` orders in parallel. |
-| How to keep order history between runs | **Figured out.** A tab-separated text file. The whole file is validated before the history is replaced. |
+### What changed from our D3 plan, and why
+| Area | D3 plan | What we did | Why |
+|---|---|---|---|
+| Features | GUI was a stretch goal "if time allows, after the change feature" | Built the Swing GUI **before** the cancel feature, then added cancel to both GUI and terminal | D4 asks for the view to be connected to the model, and the GUI was the view we wanted to demo. It also tested our MVC claim: the model needed **no** changes for the GUI. |
+| Features | MVP step 1 was pickup | Pickup is **not built yet** | We put the change feature and the GUI first, since this deliverable requires them. Pickup is first for the final build. |
+| Features | Separate kitchen screen | Partly done: the kitchen is its own `KitchenPanel`, but it is still in the same window | Same window keeps the 3-minute demo simple. A separate window is listed for the final build. |
+| Signatures | `LinkedQueue.remove(T)`, `DiningHallModel.cancelOrder(int, String)`, `OrderController.cancelOrder(int)`, `OrderFormView.cancelOrder()` | Same signatures | — |
+| Signatures | — | Added `GrubHubApp.createHalls(OrderHistory)` | So the terminal app and the GUI build identical halls. |
+| Validation | Unknown → `IllegalArgumentException`; wrong student or not waiting → `IllegalStateException` | Same, plus a blank student ID → `IllegalArgumentException`, and cancelling twice → `IllegalStateException` | Found while writing the tests. |
+| Validation | — | A non-numeric order number gets the scope's "Invalid input: Re-enter input" wording | To match the bad-input wording from our scope. |
+| Tests | Every test listed in D3's "New tests needed" for cancel | All written, plus: interleaved enqueue/dequeue tests, a test for removing between interleaved operations, the fairness counter after a cancel, the remaining model methods (`markSoldOut`, `removeListener`, constructor, list getters, `Menu.find`), and `GuiTest` (20 tests) | To reach one normal and one bad-input test per model method, and to cover the GUI. |
+| Tests | Tests for pickup and save-after-each-order | Not written | Those features aren't built yet. |
+| Views | — | Views no longer keep copies of model lists (`MenuComboModel`, `BoardListModel`, `StatusBoardView`) | So the view always shows the model's current state and can't drift from it. |
 
 ### What doesn't work yet
-- **No pickup.** Ready orders stay in `readyQueue` forever. The spec notes there
-  is no pickup/removal command.
-- **No staff/student separation.** Kitchen actions (start, finish, sold out) are
-  in the same terminal menu as student ordering, and in the same GUI window.
-- **History saves only on a clean quit** (`0` in the terminal, closing the GUI
-  window). If the program crashes, that run's orders are lost.
-- **Order lookup only searches the selected hall.** An order placed at another
-  hall shows "Order not found." until you switch to that hall. (The GUI's
-  "Your order" line does follow the order across a hall switch.)
-- **The terminal status board redraws after every change.** With several views
-  active, the terminal gets noisy. The GUI board doesn't have this problem.
-- **Wait time ignores parallel cooking**, as described above.
-- **No tests for `GrubHubApp`'s menu loop or the GUI's start-up dialog.** They
-  are only checked by running them.
-- **Scope stretch goals not built yet:** most-ordered items and total spending
-  (see Next Steps).
-- All 94 tests pass. No known crash on the MVP path or on the bad-input
-  cases from our scope (sold-out item, quantity over 20). The same goes for the
-  extra cases we added (non-numeric quantity, unknown item, hall or order
-  number).
+- **No pickup.** Ready orders stay in `readyQueue` and on the board forever.
+- **History saves only on a clean quit** (closing the GUI window, or `0` in
+  the terminal). If the program crashes, that run's orders are lost.
+- **Order lookup and cancel only search the selected hall.** An order placed at
+  another hall shows "Order not found." until you switch to that hall. The
+  GUI's "Your order" line does follow the order.
+- **A cancel can't be undone**, and cancelling needs the order number (there's
+  no "my orders" list yet).
+- **Kitchen and student controls share one window.**
+- **Wait time ignores parallel cooking.** A kitchen with capacity 2 still adds
+  `minutesPerOrder` per order ahead.
+- **Not tested automatically:** the terminal menu loop in `GrubHubApp` and the
+  GUI's start-up dialog. They are checked by running them.
+- **Stretch goal not built yet:** most-ordered items.
+- **No failing tests.** All 137 pass. We know of no crash on the bad-input
+  cases above.
 
 ---
 
 ## Next Steps
 
-### Left to finish the MVP (in order)
-1. **Pickup:** add a way to remove a ready order when the student collects it,
-   so `readyQueue` doesn't grow forever.
-2. **Save after every accepted order** instead of only on quit.
-3. **Look up an order at any hall**, not just the selected one.
-4. **Separate the kitchen screen** (its own small view) from the student menu.
-5. **Move the menu loop** out of `GrubHubApp` into a view class, so that class
-   only builds objects.
-
-### Change feature for Deliverable 4: **Cancel a waiting order**
-A student can cancel their own order while it is still `WAITING`. It leaves the
-line, everyone behind it moves up, and wait times drop. An order already
-`BEING_MADE` or `READY` can't be cancelled. This changes model state and logic
-(removing from the *middle* of a queue, plus a new status), and the user reaches
-it through the controller and view, so it counts as non-trivial.
-
-**Predicted to change**
-| Class | Layer | Predicted change |
-|---|---|---|
-| `LinkedQueue<T>` | Model | New `boolean remove(T item)` to unlink a node from anywhere in the list, updating `front`, `rear` and `count`. |
-| `OrderStatus` | Model | New value `CANCELLED`. |
-| `Order` | Model | `setStatus` allows `WAITING → CANCELLED` only. |
-| `DiningHallModel` | Model | New `void cancelOrder(int orderNum, String studentId)`. It removes the order from `mobileQueue` or `walkInQueue`, sets it to `CANCELLED` and notifies listeners. Unknown number → `IllegalArgumentException`, wrong student or not `WAITING` → `IllegalStateException`. `getPosition` and `getWaitTime` handle `CANCELLED`. |
-| `OrderController` | Controller | New `void cancelOrder(int orderNum)` using the session's student ID and reporting the result through `getLastMessage()`. `lookupStatus` shows cancelled orders. |
-| `OrderFormView` | View | New `cancelOrder()` that reads an order number and calls the controller. |
-| `GrubHubApp` | Entry | One new menu option. |
-
-**Predicted *not* to change:** `KioskView`, `MobileView`, `StatusBoardView`,
-`Menu`, `OrderHistory`, `OrderListener`. The status board should drop
-cancelled orders automatically, because it just redraws from the model after
-`modelChanged()`. `OrderHistory` stores the same `Order` object, so the status
-change shows up in history without any edits there. If either of those turns
-out wrong, we'll record it in Deliverable 4.
+### What is left for the final build (in order)
+1. **Pickup.** Add a `PICKED_UP` status, `DiningHallModel.pickUpOrder(orderNum)`
+   (using `LinkedQueue.remove` on `readyQueue`), a controller method, and a
+   **Picked up** button on the board, plus tests.
+2. **Save after every accepted order or cancel**, not only on quit.
+3. **Look up and cancel at any hall**, not just the selected one.
+4. **Separate kitchen window** from the student window.
+5. **Most-ordered items** (stretch goal below).
+6. **Cleanup:** move transition rules into `OrderStatus.canMoveTo` and give
+   views a read-only hall interface (see Reflection).
 
 ### Stretch goals
-These are the stretch goals from our scope. The spec moved the first three into
-the MVP.
-
-| Scope stretch goal | Built so far | Decision |
+| Scope stretch goal | Status | Decision |
 |---|---|---|
-| **Persistent Order History:** save by student ID, reorder last meal | Built (`OrderHistory.save/load`, `reorderLast`) | Done |
-| …view most-ordered items | Not built | **Committing.** Small change: one new `OrderHistory` method plus a controller method and a view method. |
-| …see total spending | Not built | **Dropping.** Menu items have no prices, so we'd have to add prices to `Menu`, `Order` and the save file. |
-| **Mobile Order Scheduling:** two FIFO lines, 3 mobile then 1 in-person, wait times use both lines | Built | Done |
-| **Order Status Pipeline:** waiting → being made → ready, kitchen limit, look up by order number | Built | Done |
-| …color-coded status | Built in the GUI (`StatusBoardPanel`: waiting orange, being made blue, ready green) | Done |
-| **GUI:** separate in-person and mobile screens, plus a pickup display | Built (`GrubHubGUI` with `KioskPanel`/`MobilePanel`, `StatusBoardPanel`, `KitchenPanel`) | Done. Each screen is a new `OrderListener` view calling the same controller. The model needed no changes; the only non-view edit was moving the hall setup into `GrubHubApp.createHalls` so both apps share it. |
-| Pickup / clearing ready orders (not in scope; we found it while building) | Not built | **Committing.** It's MVP step 1 above. |
-| Second status board / parallel-kitchen wait times (came up in the spec) | Not built | **Dropping** for now. |
+| Persistent order history and reorder last meal | Built | Done |
+| …view most-ordered items | Not built | **Committing.** One `OrderHistory` method, one controller method and a small GUI list. |
+| …see total spending | Not built | **Dropping.** Menu items have no prices. Adding them would change `Menu`, `Order` and the save file. |
+| Mobile order scheduling (3 mobile, then 1 walk-in) | Built | Done |
+| Order status pipeline + color-coded status | Built (`StatusBoardPanel`) | Done |
+| GUI with in-person and mobile screens and a pickup display | Built (`GrubHubGUI`) | Done; the pickup button comes with step 1 |
+| Separate kitchen window | Partly built | **Committing** (step 4) |
+| Parallel-kitchen wait times / second status board | Not built | **Dropping** |
 
-### New tests needed
-- `LinkedQueueTest`: `remove` at the front, middle and rear; removing the only
-  item clears both ends; removing a missing item returns false; `remove(null)`.
-- `OrderTest`: `WAITING → CANCELLED` is allowed. `BEING_MADE → CANCELLED` and
-  `READY → CANCELLED` throw `IllegalStateException`.
-- `DiningHallModelTest`:
-  - normal cancel updates the positions of orders behind it and notifies
-  - cancel an unknown number → `IllegalArgumentException`
-  - cancel someone else's order or a non-waiting order → `IllegalStateException`
-  - cancelling keeps the fairness counter correct
-- `OrderControllerTest`: cancel reports success or a clear message (no hall,
-  not found, already being made).
-- `ViewTest`: non-numeric order number re-prompts.
-- Tests for the pickup and save-after-each-order changes.
+### Our 3-minute demo (timed)
+Delete `order_history.txt` before the demo so order numbers start at 1.
+
+| Time | What we show |
+|---|---|
+| 0:00–0:20 | Run `GrubHubGUI`, enter a student ID, pick **Kiosk**. Point out the order form, kitchen and status board. |
+| 0:20–0:50 | Order Pizza ×2 (#1), Fries ×1 (#2) and Salad ×1 (#3). The board fills in; "Your order #3" shows position 3, ~15 min. |
+| 0:50–1:30 | **New feature.** Cancel #2: it leaves the board, Salad moves up to position 2 and its wait drops to ~10 min. Click **Start next order**, then try to cancel #1 → "can no longer be cancelled". Type `abc` and cancel → "Invalid input". |
+| 1:30–2:00 | **Finish order.** #1 turns green under "Ready for pickup", and "Your order" updates without a click (observer pattern). |
+| 2:00–2:30 | **Bad input from our scope:** quantity `25` → "Invalid input: Re-enter input". Mark Salad sold out, then order it → "Not available". |
+| 2:30–2:50 | In Eclipse, run the `test` folder as JUnit: 137 green. Open `DiningHallModelTest.cancelRemovesOrderAndMovesLineUp`. |
+| 2:50–3:00 | Close the window (history saved) and summarize: the model didn't change for the GUI, and cancel stayed inside the model. |
 
 ### Who does what
-| Item | Owner |
+| Remaining item | Owner |
 |---|---|
-| `LinkedQueue.remove` + tests | Jonathan |
-| `OrderStatus`/`Order` cancel rules + `OrderTest` updates | Isabella |
-| `DiningHallModel.cancelOrder` + pickup + model tests | Ryan |
-| Controller/view/menu wiring for cancel & pickup, kitchen view split, controller/view tests | Shelby |
-| Save-after-each-order, any-hall lookup, README Deliverable 4 comparison | Everyone (split at next meeting) |
+| Pickup: `PICKED_UP`, `pickUpOrder`, model tests | Ryan |
+| Pickup and cancel wiring in controller and views, separate kitchen window, GUI tests | Shelby |
+| `OrderStatus.canMoveTo` transition table + `OrderTest` updates | Isabella |
+| Save after each order, any-hall lookup and cancel, most-ordered items, README for the final | Jonathan |
+| Rehearse the 3-minute demo | Everyone |
 
 ---
 
 ## Attribution
 
+One row per class and test file. "GenAI-assisted" means Claude (Anthropic) in
+Claude Code wrote or changed the code from our spec or plan, and the named
+person reviewed or ran it.
+
 | File | Who | How |
 |---|---|---|
-| `src/LinkedQueue.java` | Jonathan | Wrote the first version (linked nodes, enqueue/dequeue/isEmpty/size). Finished with GenAI (peek, null checks, iterator). Reviewed. |
-| `src/DiningHallModel.java` | Jonathan | Wrote the initial field stub. GenAI-assisted implementation from our spec. Reviewed. |
-| `src/Order.java` | Isabella | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderStatus.java` | Isabella | GenAI-assisted from the spec. |
+| `src/LinkedQueue.java` | Jonathan | Wrote the first version (linked nodes, enqueue/dequeue/isEmpty/size). Finished with GenAI (peek, null checks, iterator). D4: `remove`, GenAI-assisted. Reviewed. |
+| `src/DiningHallModel.java` | Jonathan | Wrote the initial field stub. GenAI-assisted implementation from our spec. D4: `cancelOrder`, GenAI-assisted. Reviewed. |
+| `src/Order.java` | Isabella, Jonathan | Isabella: GenAI-assisted from the spec, reviewed. Jonathan: D4 cancel rule in `setStatus`, GenAI-assisted. |
+| `src/OrderStatus.java` | Isabella, Jonathan | Isabella: GenAI-assisted from the spec. Jonathan: D4 `CANCELLED`, GenAI-assisted. |
 | `src/OrderListener.java` | Isabella | GenAI-assisted from the spec. |
 | `src/Menu.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
 | `src/OrderHistory.java` | Jonathan | GenAI-assisted from the spec. Reviewed. |
-| `src/OrderController.java` | Ryan | Generated with GenAI from the spec. Ryan reviewed it. |
-| `src/OrderFormView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
+| `src/OrderController.java` | Ryan, Jonathan | Ryan: generated with GenAI from the spec, reviewed. Jonathan: D4 `cancelOrder` and cancelled lookup text, GenAI-assisted. |
+| `src/OrderFormView.java` | Shelby, Jonathan | Shelby: generated with GenAI, reviewed. Jonathan: D4 `cancelOrder()`, GenAI-assisted. |
 | `src/KioskView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
 | `src/MobileView.java` | Ryan | Generated with GenAI. Ryan reviewed it. |
-| `src/StatusBoardView.java` | Shelby | Generated with GenAI. Shelby reviewed it. |
-| `src/GrubHubApp.java` | Ryan | Generated with GenAI. Ryan reviewed it and ran the MVP path by hand. |
+| `src/StatusBoardView.java` | Shelby, Jonathan | Shelby: generated with GenAI, reviewed. Jonathan: D4 removed cached rows, GenAI-assisted. |
+| `src/GrubHubApp.java` | Ryan, Jonathan | Ryan: generated with GenAI, reviewed, ran the MVP path by hand. Jonathan: `createHalls` and cancel option, GenAI-assisted. |
 | `src/ModelDriver.java` | Jonathan | GenAI-assisted. Ran it. |
-| `src/RyanTest.java` | Ryan | Wrote it while setting up the Eclipse Java project (`.project`, `.classpath`). |
-| `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
-| `test/OrderTest.java` | Isabella, Jonathan | Jonathan: GenAI-assisted first version. Isabella: expanded, restructured and added the stage-skipping exception tests. |
-| `test/MenuTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
-| `test/OrderHistoryTest.java` | Isabella | GenAI-assisted from the spec test plan. Ran it. |
-| `test/DiningHallModelTest.java` | Isabella | GenAI-assisted from the spec test plan. Ran it. |
-| `test/OrderControllerTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
-| `test/ViewTest.java` | Jonathan | GenAI-assisted. Ran it. |
-| `src/GrubHubGUI.java` | Jonathan | Generated with GenAI (Swing GUI stretch goal). |
-| `src/OrderFormPanel.java` | Jonathan | Generated with GenAI. |
+| `src/GrubHubGUI.java` | Jonathan | Generated with GenAI (Swing GUI). Ran it. |
+| `src/OrderFormPanel.java` | Jonathan | Generated with GenAI. D4 cancel button. Ran it. |
 | `src/KioskPanel.java` | Jonathan | Generated with GenAI. |
 | `src/MobilePanel.java` | Jonathan | Generated with GenAI. |
-| `src/StatusBoardPanel.java` | Jonathan | Generated with GenAI. |
-| `src/KitchenPanel.java` | Jonathan | Generated with GenAI. |
+| `src/StatusBoardPanel.java` | Jonathan | Generated with GenAI. Ran it. |
+| `src/KitchenPanel.java` | Jonathan | Generated with GenAI. Ran it. |
+| `src/MenuComboModel.java` | Jonathan | Generated with GenAI. |
+| `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. D4: remove and interleaving tests. Ran it. |
+| `test/OrderTest.java` | Isabella, Jonathan | Jonathan: GenAI-assisted first version. Isabella: expanded, restructured and added the stage-skipping exception tests. Jonathan: D4 cancel tests, GenAI-assisted. |
+| `test/MenuTest.java` | Jonathan | GenAI-assisted from the spec test plan. D4: `find` and constructor tests. Ran it. |
+| `test/OrderHistoryTest.java` | Isabella, Jonathan | Isabella: GenAI-assisted from the spec test plan, ran it. Jonathan: D4 cancelled-status and size tests, GenAI-assisted. |
+| `test/DiningHallModelTest.java` | Isabella, Jonathan | Isabella: GenAI-assisted from the spec test plan, ran it. Jonathan: D4 cancel tests and remaining-method tests, GenAI-assisted. |
+| `test/OrderControllerTest.java` | Jonathan | GenAI-assisted from the spec test plan. D4 cancel tests. Ran it. |
+| `test/ViewTest.java` | Jonathan | GenAI-assisted. D4 cancel tests. Ran it. |
 | `test/GuiTest.java` | Jonathan | Generated with GenAI. Ran it. |
 
-**GenAI note:** We used Claude (Anthropic) in Claude Code. We gave it our
-Deliverable 2 specification and our partial `LinkedQueue`, and it wrote most of
-the class and test code from that spec. It also drafted this README. Later
-we asked it to build a Swing GUI for all of the views on top of the same
-controller and model. We
-reviewed the generated code against the spec, ran the tests and the program,
-and made our own edits (for example `OrderTest`).
+**GenAI note:** We used Claude (Anthropic) in Claude Code.
+- For D3 we gave it our Deliverable 2 specification and our partial
+  `LinkedQueue`, and it wrote most of the class and test code from that spec.
+- For D4 we asked it to build a Swing GUI on the same controller and model,
+  and to implement the cancel feature exactly as our D3 Next Steps predicted.
+  It also wrote the tests and drafted this README.
+- We reviewed the generated code against our spec and plan, ran the tests and
+  both programs, and made our own edits (for example `OrderTest` and the
+  attribution table).

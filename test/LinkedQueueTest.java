@@ -79,4 +79,110 @@ public class LinkedQueueTest {
         assertEquals("abc", sb.toString());
         assertEquals(3, queue.size());
     }
+
+    // ------------------------------------- interleaving and remove (D4)
+
+    @Test
+    public void interleavedEnqueueDequeueKeepsFifoOrder() {
+        queue.enqueue("A");
+        queue.enqueue("B");
+        assertEquals("A", queue.dequeue());
+        queue.enqueue("C");
+        queue.enqueue("D");
+        assertEquals("B", queue.dequeue());
+        assertEquals("C", queue.dequeue());
+        queue.enqueue("E");
+        assertEquals("D", queue.peek());
+        assertEquals(2, queue.size());
+        assertEquals("D", queue.dequeue());
+        assertEquals("E", queue.dequeue());
+        assertTrue(queue.isEmpty());
+        queue.enqueue("F");
+        assertEquals("F", queue.peek());
+        assertEquals(1, queue.size());
+    }
+
+    @Test
+    public void iteratorPastEndThrows() {
+        queue.enqueue("A");
+        java.util.Iterator<String> it = queue.iterator();
+        assertEquals("A", it.next());
+        assertFalse(it.hasNext());
+        try {
+            it.next();
+            fail("expected NoSuchElementException");
+        }
+        catch (NoSuchElementException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void removeFront() {
+        queue.enqueue("A");
+        queue.enqueue("B");
+        queue.enqueue("C");
+        assertTrue(queue.remove("A"));
+        assertEquals(2, queue.size());
+        assertEquals("B", queue.dequeue());
+        assertEquals("C", queue.dequeue());
+    }
+
+    @Test
+    public void removeMiddleLinksNeighbours() {
+        queue.enqueue("A");
+        queue.enqueue("B");
+        queue.enqueue("C");
+        assertTrue(queue.remove("B"));
+        assertEquals(2, queue.size());
+        assertEquals("A", queue.dequeue());
+        assertEquals("C", queue.dequeue());
+    }
+
+    @Test
+    public void removeRearMovesRearBack() {
+        queue.enqueue("A");
+        queue.enqueue("B");
+        assertTrue(queue.remove("B"));
+        queue.enqueue("C"); // must link after A, the new rear
+        assertEquals("A", queue.dequeue());
+        assertEquals("C", queue.dequeue());
+        assertTrue(queue.isEmpty());
+    }
+
+    @Test
+    public void removeOnlyItemClearsBothEnds() {
+        queue.enqueue("A");
+        assertTrue(queue.remove("A"));
+        assertTrue(queue.isEmpty());
+        queue.enqueue("B");
+        assertEquals("B", queue.peek());
+        assertEquals("B", queue.dequeue());
+    }
+
+    @Test
+    public void removeMissingReturnsFalse() {
+        assertFalse(queue.remove("A"));
+        queue.enqueue("A");
+        assertFalse(queue.remove("Z"));
+        assertEquals(1, queue.size());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void removeNullThrows() {
+        queue.remove(null);
+    }
+
+    @Test
+    public void removeBetweenInterleavedOperations() {
+        queue.enqueue("A");
+        queue.enqueue("B");
+        queue.enqueue("C");
+        assertEquals("A", queue.dequeue());
+        assertTrue(queue.remove("C"));
+        queue.enqueue("D");
+        assertEquals("B", queue.dequeue());
+        assertEquals("D", queue.dequeue());
+        assertTrue(queue.isEmpty());
+    }
 }

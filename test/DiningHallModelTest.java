@@ -201,4 +201,176 @@ public class DiningHallModelTest {
         int b = hall.placeOrder("1", "Pizza", 1, true);
         assertTrue(b > a);
     }
+
+    // ------------------------------------------- cancel a waiting order (D4)
+
+    @Test
+    public void cancelRemovesOrderAndMovesLineUp() {
+        int a = hall.placeOrder("a", "Pizza", 1, false);
+        int b = hall.placeOrder("b", "Pizza", 1, false);
+        int c = hall.placeOrder("c", "Pizza", 1, false);
+        assertEquals(3, hall.getPosition(c));
+        assertEquals(15, hall.getWaitTime(c));
+        notifications = 0;
+
+        hall.cancelOrder(b, "b");
+
+        assertEquals(OrderStatus.CANCELLED, hall.getStatus(b));
+        assertEquals(1, hall.getPosition(a));
+        assertEquals(2, hall.getPosition(c));
+        assertEquals(10, hall.getWaitTime(c));
+        assertEquals(0, hall.getPosition(b));
+        assertEquals(0, hall.getWaitTime(b));
+        assertEquals(2, hall.getWaitingLine().size());
+        assertEquals(1, notifications);
+        assertEquals(OrderStatus.CANCELLED,
+            history.getLast("b").getStatus());
+    }
+
+    @Test
+    public void cancelledOrderIsNeverStarted() {
+        int a = hall.placeOrder("a", "Pizza", 1, true);
+        int b = hall.placeOrder("b", "Pizza", 1, true);
+        hall.cancelOrder(a, "a");
+        hall.startNextOrder();
+        assertEquals(OrderStatus.BEING_MADE, hall.getStatus(b));
+        assertEquals(OrderStatus.CANCELLED, hall.getStatus(a));
+        try {
+            hall.startNextOrder();
+            fail("expected NoSuchElementException");
+        }
+        catch (NoSuchElementException expected) {
+            // ok: the cancelled order is not in either line
+        }
+    }
+
+    @Test
+    public void cancelKeepsFairnessCounter() {
+        DiningHallModel big = new DiningHallModel("Big", new Menu("Pizza"),
+            history, 10, 5);
+        int m1 = big.placeOrder("a", "Pizza", 1, true);
+        int m2 = big.placeOrder("b", "Pizza", 1, true);
+        int m3 = big.placeOrder("c", "Pizza", 1, true);
+        int m4 = big.placeOrder("d", "Pizza", 1, true);
+        int w1 = big.placeOrder("e", "Pizza", 1, false);
+        big.startNextOrder(); // m1
+        big.startNextOrder(); // m2
+        big.cancelOrder(m3, "c");
+        big.startNextOrder(); // m4 is the third mobile start in a row
+        assertEquals(OrderStatus.BEING_MADE, big.getStatus(m4));
+        assertEquals(1, big.getPosition(w1));
+        big.startNextOrder();
+        assertEquals(OrderStatus.BEING_MADE, big.getStatus(w1));
+        assertEquals(OrderStatus.BEING_MADE, big.getStatus(m1));
+        assertEquals(OrderStatus.BEING_MADE, big.getStatus(m2));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void cancelUnknownOrderThrows() {
+        hall.cancelOrder(999, "a");
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void cancelBlankStudentThrows() {
+        int a = hall.placeOrder("a", "Pizza", 1, false);
+        hall.cancelOrder(a, " ");
+    }
+
+    @Test
+    public void cancelOtherStudentsOrderThrowsAndKeepsIt() {
+        int a = hall.placeOrder("a", "Pizza", 1, false);
+        notifications = 0;
+        try {
+            hall.cancelOrder(a, "b");
+            fail("expected IllegalStateException");
+        }
+        catch (IllegalStateException expected) {
+            // ok
+        }
+        assertEquals(OrderStatus.WAITING, hall.getStatus(a));
+        assertEquals(1, hall.getPosition(a));
+        assertEquals(0, notifications);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void cancelBeingMadeOrderThrows() {
+        int a = hall.placeOrder("a", "Pizza", 1, false);
+        hall.startNextOrder();
+        hall.cancelOrder(a, "a");
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void cancelTwiceThrows() {
+        int a = hall.placeOrder("a", "Pizza", 1, false);
+        hall.cancelOrder(a, "a");
+        hall.cancelOrder(a, "a");
+    }
+
+    // ------------------------------------- remaining model methods (D4)
+
+    @Test
+    public void markSoldOutNotifies() {
+        notifications = 0;
+        hall.markSoldOut("salad");
+        assertFalse(hall.isInStock("Salad"));
+        assertTrue(hall.isOnMenu("Salad"));
+        assertEquals(1, notifications);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void markSoldOutUnknownThrows() {
+        hall.markSoldOut("Tacos");
+    }
+
+    @Test
+    public void removeListenerStopsNotifications() {
+        int[] count = {0};
+        OrderListener l = () -> count[0]++;
+        hall.addListener(l);
+        hall.placeOrder("a", "Pizza", 1, false);
+        hall.removeListener(l);
+        hall.placeOrder("a", "Pizza", 1, false);
+        assertEquals(1, count[0]);
+        hall.removeListener(l); // removing again has no effect
+    }
+
+    @Test
+    public void constructorRejectsBadArguments() {
+        Menu menu = new Menu("Pizza");
+        String[] names = {null, " "};
+        for (String name : names) {
+            try {
+                new DiningHallModel(name, menu, history, 1, 1);
+                fail("expected IllegalArgumentException");
+            }
+            catch (IllegalArgumentException expected) {
+                // ok
+            }
+        }
+        try {
+            new DiningHallModel("Hall", menu, history, 0, 1);
+            fail("expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            // ok
+        }
+        try {
+            new DiningHallModel("Hall", null, history, 1, 1);
+            fail("expected IllegalArgumentException");
+        }
+        catch (IllegalArgumentException expected) {
+            // ok
+        }
+    }
+
+    @Test
+    public void listGettersReturnCopies() {
+        hall.placeOrder("a", "Pizza", 1, false);
+        hall.getWaitingLine().clear();
+        hall.getMenuItems().clear();
+        assertEquals(1, hall.getWaitingLine().size());
+        assertEquals(3, hall.getMenuItems().size());
+        assertEquals("North Dining Hall", hall.getHallName());
+        assertEquals(2, hall.getKitchenCapacity());
+    }
 }

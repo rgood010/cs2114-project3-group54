@@ -18,6 +18,11 @@ import javax.swing.SwingUtilities;
  * the selected hall's menu, reads an item and quantity, and hands them to
  * the controller. Like the terminal OrderFormView, it never changes the
  * model itself; it only calls the controller and reads the model.
+ *
+ * <p>It keeps no copy of model state: the item list is read live from the
+ * model by {@link MenuComboModel}, and the "Your order" line is rebuilt from
+ * the model each time. It only remembers the number (and hall) of the order
+ * it placed, so it knows which order to show.
  */
 public abstract class OrderFormPanel extends JPanel implements OrderListener {
 
@@ -25,12 +30,14 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
     private static final Color OK = new Color(20, 110, 40);
 
     private final OrderController controller;
-    private final JComboBox<String> itemBox = new JComboBox<>();
+    private final MenuComboModel menuModel;
+    private final JComboBox<String> itemBox;
     private final JTextField quantityField = new JTextField("1", 5);
-    private final JTextField lookupField = new JTextField(5);
+    private final JTextField orderNumField = new JTextField(5);
     private final JButton orderButton = new JButton("Place order");
     private final JButton reorderButton = new JButton("Reorder my last order");
     private final JButton lookupButton = new JButton("Look up");
+    private final JButton cancelButton = new JButton("Cancel order");
     private final JLabel messageLabel = new JLabel(" ");
     private final JLabel statusLabel = new JLabel(" ");
     private int trackedOrderNum = 0;
@@ -42,17 +49,21 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
     protected OrderFormPanel(OrderController controller) {
         super(new BorderLayout(10, 10));
         this.controller = controller;
+        menuModel = new MenuComboModel(controller, false);
+        itemBox = new JComboBox<>(menuModel);
 
         itemBox.setRenderer(new SoldOutRenderer());
         orderButton.addActionListener(e -> placeOrder());
         reorderButton.addActionListener(e -> reorderLast());
         lookupButton.addActionListener(e -> lookUp());
+        cancelButton.addActionListener(e -> cancelOrder());
         quantityField.addActionListener(e -> placeOrder());
-        lookupField.addActionListener(e -> lookUp());
+        orderNumField.addActionListener(e -> lookUp());
 
         JPanel lookupRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        lookupRow.add(lookupField);
+        lookupRow.add(orderNumField);
         lookupRow.add(lookupButton);
+        lookupRow.add(cancelButton);
 
         JPanel form = new JPanel(new GridLayout(0, 2, 8, 8));
         form.add(new JLabel("Item:"));
@@ -63,7 +74,7 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
         form.add(orderButton);
         form.add(new JLabel(""));
         form.add(reorderButton);
-        form.add(new JLabel("Look up order #:"));
+        form.add(new JLabel("Order #:"));
         form.add(lookupRow);
 
         JPanel messages = new JPanel(new GridLayout(2, 1, 4, 4));
@@ -89,17 +100,7 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
      * status. Called when the model changes or a new hall is selected.
      */
     public void refresh() {
-        Object selected = itemBox.getSelectedItem();
-        itemBox.removeAllItems();
-        DiningHallModel hall = controller.getSelectedHall();
-        if (hall != null) {
-            for (String item : hall.getMenuItems()) {
-                itemBox.addItem(item);
-            }
-            if (selected != null) {
-                itemBox.setSelectedItem(selected);
-            }
-        }
+        menuModel.refresh();
         refreshStatus();
     }
 
@@ -146,9 +147,9 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
         afterOrder();
     }
 
-    /** Looks up the order number typed in the lookup box. */
+    /** Looks up the order number typed in the order # box. */
     void lookUp() {
-        String text = lookupField.getText().trim();
+        String text = orderNumField.getText().trim();
         try {
             int num = Integer.parseInt(text);
             String result = controller.lookupStatus(num);
@@ -157,6 +158,23 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
         catch (NumberFormatException e) {
             show("Order numbers are whole numbers.", false);
         }
+    }
+
+    /** Cancels the order number typed in the order # box. */
+    void cancelOrder() {
+        String text = orderNumField.getText().trim();
+        int num;
+        try {
+            num = Integer.parseInt(text);
+        }
+        catch (NumberFormatException e) {
+            show("Invalid input: Re-enter input (\"" + text
+                + "\" is not a whole number).", false);
+            return;
+        }
+        controller.cancelOrder(num);
+        show(controller.getLastMessage(), controller.lastActionSucceeded());
+        refreshStatus();
     }
 
     private void afterOrder() {
@@ -176,11 +194,15 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
             return;
         }
         // Read-only calls on the model, as in the terminal views.
-        statusLabel.setText("Your order #" + trackedOrderNum + " at "
-            + trackedHall.getHallName() + ": "
-            + trackedHall.getStatus(trackedOrderNum) + " | position "
-            + trackedHall.getPosition(trackedOrderNum) + " | wait ~"
-            + trackedHall.getWaitTime(trackedOrderNum) + " min");
+        OrderStatus status = trackedHall.getStatus(trackedOrderNum);
+        String text = "Your order #" + trackedOrderNum + " at "
+            + trackedHall.getHallName() + ": " + status;
+        if (status != OrderStatus.CANCELLED) {
+            text += " | position " + trackedHall.getPosition(trackedOrderNum)
+                + " | wait ~" + trackedHall.getWaitTime(trackedOrderNum)
+                + " min";
+        }
+        statusLabel.setText(text);
     }
 
     private void show(String message, boolean ok) {
@@ -198,8 +220,8 @@ public abstract class OrderFormPanel extends JPanel implements OrderListener {
         return quantityField;
     }
 
-    JTextField getLookupField() {
-        return lookupField;
+    JTextField getOrderNumField() {
+        return orderNumField;
     }
 
     String getMessage() {

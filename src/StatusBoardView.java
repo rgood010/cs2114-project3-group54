@@ -5,14 +5,13 @@ import java.util.List;
 /**
  * VIEW. The pickup status board: the current line (waiting and being made)
  * and the orders ready for pickup at the selected hall. Redraws itself
- * whenever the model changes.
+ * whenever the model changes. It keeps no copy of model state: every row is
+ * built from the model at the moment it is printed or asked for.
  */
 public class StatusBoardView implements OrderListener {
 
     private final OrderController controller;
     private final PrintStream out;
-    private final List<String> lineRows = new ArrayList<>();
-    private final List<String> readyRows = new ArrayList<>();
     private boolean autoRefresh = true;
 
     /**
@@ -36,7 +35,7 @@ public class StatusBoardView implements OrderListener {
 
     /** Prints the current line, or an empty-state message. */
     public void displayLine() {
-        refresh();
+        List<String> lineRows = getLineRows();
         out.println("----- NOW IN LINE -----");
         if (lineRows.isEmpty()) {
             out.println("  No orders in line.");
@@ -48,7 +47,7 @@ public class StatusBoardView implements OrderListener {
 
     /** Prints the ready orders, or an empty-state message. */
     public void displayReady() {
-        refresh();
+        List<String> readyRows = getReadyRows();
         out.println("----- READY FOR PICKUP -----");
         if (readyRows.isEmpty()) {
             out.println("  No orders ready for pickup.");
@@ -58,45 +57,45 @@ public class StatusBoardView implements OrderListener {
         }
     }
 
-    /** @return a copy of the line rows last shown */
+    /** @return the line rows, built from the model now */
     public List<String> getLineRows() {
-        return new ArrayList<>(lineRows);
+        List<String> rows = new ArrayList<>();
+        DiningHallModel hall = controller.getSelectedHall();
+        if (hall == null) {
+            return rows;
+        }
+        for (Order o : hall.getOrdersBeingMade()) {
+            rows.add(o + "  BEING MADE  ~"
+                + hall.getWaitTime(o.getOrderNum()) + " min");
+        }
+        for (Order o : hall.getWaitingLine()) {
+            rows.add(o + "  WAITING #" + hall.getPosition(o.getOrderNum())
+                + "  ~" + hall.getWaitTime(o.getOrderNum()) + " min");
+        }
+        return rows;
     }
 
-    /** @return a copy of the ready rows last shown */
+    /** @return the ready rows, built from the model now */
     public List<String> getReadyRows() {
-        return new ArrayList<>(readyRows);
+        List<String> rows = new ArrayList<>();
+        DiningHallModel hall = controller.getSelectedHall();
+        if (hall == null) {
+            return rows;
+        }
+        for (Order o : hall.getReadyOrders()) {
+            rows.add(o.toString());
+        }
+        return rows;
     }
 
     @Override
     public void modelChanged() {
         if (!autoRefresh || controller.getSelectedHall() == null) {
-            refresh();
             return;
         }
         out.println("===== " + controller.getSelectedHall().getHallName()
             + " STATUS BOARD =====");
         displayLine();
         displayReady();
-    }
-
-    private void refresh() {
-        lineRows.clear();
-        readyRows.clear();
-        DiningHallModel hall = controller.getSelectedHall();
-        if (hall == null) {
-            return;
-        }
-        for (Order o : hall.getOrdersBeingMade()) {
-            lineRows.add(o + "  BEING MADE  ~"
-                + hall.getWaitTime(o.getOrderNum()) + " min");
-        }
-        for (Order o : hall.getWaitingLine()) {
-            lineRows.add(o + "  WAITING #" + hall.getPosition(o.getOrderNum())
-                + "  ~" + hall.getWaitTime(o.getOrderNum()) + " min");
-        }
-        for (Order o : hall.getReadyOrders()) {
-            readyRows.add(o.toString());
-        }
     }
 }

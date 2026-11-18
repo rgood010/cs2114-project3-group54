@@ -19,7 +19,8 @@ public class KitchenPanel extends JPanel implements OrderListener {
     private final OrderController controller;
     private final JButton startButton = new JButton("Start next order");
     private final JButton finishButton = new JButton("Finish order");
-    private final JComboBox<String> soldOutBox = new JComboBox<>();
+    private final MenuComboModel stockModel;
+    private final JComboBox<String> soldOutBox;
     private final JButton soldOutButton = new JButton("Mark sold out");
     private final JLabel summaryLabel = new JLabel(" ");
     private final JLabel messageLabel = new JLabel(" ");
@@ -30,6 +31,8 @@ public class KitchenPanel extends JPanel implements OrderListener {
     public KitchenPanel(OrderController controller) {
         super(new BorderLayout(10, 10));
         this.controller = controller;
+        stockModel = new MenuComboModel(controller, true);
+        soldOutBox = new JComboBox<>(stockModel);
 
         startButton.addActionListener(e -> startNext());
         finishButton.addActionListener(e -> finish());
@@ -60,22 +63,16 @@ public class KitchenPanel extends JPanel implements OrderListener {
         refresh();
     }
 
-    /** Reloads the item list and the line counts for the selected hall. */
+    /**
+     * Re-reads the in-stock items and the line counts for the selected
+     * hall. Nothing is cached: the item list reads the model live.
+     */
     public void refresh() {
-        Object selected = soldOutBox.getSelectedItem();
-        soldOutBox.removeAllItems();
+        stockModel.refresh();
         DiningHallModel hall = controller.getSelectedHall();
         if (hall == null) {
             summaryLabel.setText("Select a dining hall first.");
             return;
-        }
-        for (String item : hall.getMenuItems()) {
-            if (hall.isInStock(item)) {
-                soldOutBox.addItem(item);
-            }
-        }
-        if (selected != null) {
-            soldOutBox.setSelectedItem(selected);
         }
         summaryLabel.setText(hall.getHallName() + " | waiting: "
             + hall.getWaitingLine().size() + " | being made: "

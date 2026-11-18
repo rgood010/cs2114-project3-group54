@@ -83,6 +83,42 @@ public class LinkedQueue<T> implements Iterable<T> {
         return front.data;
     }
 
+    /**
+     * Removes the first entry equal to the given item, wherever it is in the
+     * queue. Entries behind it move up one place. Used to cancel a waiting
+     * order.
+     *
+     * @param item the item to remove
+     * @return true if the item was found and removed, false if it is not in
+     *         the queue
+     * @throws IllegalArgumentException if item is null
+     */
+    public boolean remove(T item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Cannot remove null");
+        }
+        Node<T> previous = null;
+        Node<T> current = front;
+        while (current != null) {
+            if (current.data.equals(item)) {
+                if (previous == null) {
+                    front = current.next;
+                }
+                else {
+                    previous.next = current.next;
+                }
+                if (current == rear) {
+                    rear = previous;
+                }
+                count--;
+                return true;
+            }
+            previous = current;
+            current = current.next;
+        }
+        return false;
+    }
+
     /** @return true if the queue has no entries */
     public boolean isEmpty() {
         return count == 0;

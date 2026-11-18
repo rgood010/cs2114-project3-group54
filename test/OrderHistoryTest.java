@@ -104,4 +104,27 @@ public class OrderHistoryTest {
             new Menu("Pizza"), shared, 1, 5);
         assertTrue(hall.placeOrder("12345", "Pizza", 1, true) > 500);
     }
+
+    // ------------------------------------------------- cancelling (D4)
+
+    @Test
+    public void cancelledStatusSurvivesSaveAndLoad() {
+        Order o = new Order(7, "12345", "Burger", 1, false);
+        o.setStatus(OrderStatus.CANCELLED);
+        history.add(o);
+        history.save(file.getPath());
+        OrderHistory loaded = new OrderHistory();
+        loaded.load(file.getPath());
+        assertEquals(OrderStatus.CANCELLED,
+            loaded.getLast("12345").getStatus());
+    }
+
+    @Test
+    public void sizeCountsEveryOrder() {
+        assertEquals(0, history.size());
+        history.add(new Order(1, "a", "Burger", 1, false));
+        history.add(new Order(2, "b", "Pizza", 1, true));
+        assertEquals(2, history.size());
+        assertEquals(2, history.getLargestOrderNum());
+    }
 }

@@ -104,6 +104,30 @@ public abstract class OrderFormView implements OrderListener {
         }
     }
 
+    /**
+     * Reads an order number and asks the controller to cancel it.
+     * Re-prompts for anything that is not a whole number. Typing "back"
+     * stops.
+     */
+    public void cancelOrder() {
+        while (true) {
+            String text = prompt("Order number to cancel (or 'back'): ");
+            if (text == null || text.equalsIgnoreCase("back")) {
+                out.println("Nothing cancelled.");
+                return;
+            }
+            try {
+                controller.cancelOrder(Integer.parseInt(text));
+                out.println(controller.getLastMessage());
+                return;
+            }
+            catch (NumberFormatException e) {
+                out.println("Invalid input: Re-enter input (\"" + text
+                    + "\" is not a whole number).");
+            }
+        }
+    }
+
     /** Refreshes the status of the order this view placed, if any. */
     @Override
     public void modelChanged() {

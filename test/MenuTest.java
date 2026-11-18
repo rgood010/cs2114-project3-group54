@@ -44,4 +44,25 @@ public class MenuTest {
     public void markNullSoldOutThrows() {
         new Menu("Pizza").markSoldOut(null);
     }
+
+    // ------------------------------------------- find and constructor (D4)
+
+    @Test
+    public void findReturnsCanonicalName() {
+        Menu menu = new Menu("Chicken Tenders");
+        assertEquals("Chicken Tenders", menu.find("  chicken tenders "));
+    }
+
+    @Test
+    public void findUnknownOrBlankReturnsNull() {
+        Menu menu = new Menu("Pizza");
+        assertNull(menu.find("Tacos"));
+        assertNull(menu.find(" "));
+        assertNull(menu.find(null));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void blankMenuItemThrows() {
+        new Menu("Pizza", " ");
+    }
 }

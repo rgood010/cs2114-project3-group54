@@ -205,5 +205,56 @@ public class OrderTest {
         assertEquals(OrderStatus.READY, order.getStatus());
         assertEquals(OrderStatus.BEING_MADE, copy.getStatus());
     }
-}
 
+    // ------------------------------------------------- cancelling (D4)
+
+    @Test
+    public void waitingOrderCanBeCancelled() {
+        Order o = new Order(1, "12345", "Burger", 1, false);
+        o.setStatus(OrderStatus.CANCELLED);
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+    }
+
+    @Test
+    public void beingMadeOrderCannotBeCancelled() {
+        Order o = new Order(1, "12345", "Burger", 1, false);
+        o.setStatus(OrderStatus.BEING_MADE);
+        try {
+            o.setStatus(OrderStatus.CANCELLED);
+            fail("expected IllegalStateException");
+        }
+        catch (IllegalStateException expected) {
+            // ok
+        }
+        assertEquals(OrderStatus.BEING_MADE, o.getStatus());
+    }
+
+    @Test
+    public void readyOrderCannotBeCancelled() {
+        Order o = new Order(1, "12345", "Burger", 1, false);
+        o.setStatus(OrderStatus.BEING_MADE);
+        o.setStatus(OrderStatus.READY);
+        try {
+            o.setStatus(OrderStatus.CANCELLED);
+            fail("expected IllegalStateException");
+        }
+        catch (IllegalStateException expected) {
+            // ok
+        }
+        assertEquals(OrderStatus.READY, o.getStatus());
+    }
+
+    @Test
+    public void cancelledOrderCannotMoveOn() {
+        Order o = new Order(1, "12345", "Burger", 1, false);
+        o.setStatus(OrderStatus.CANCELLED);
+        try {
+            o.setStatus(OrderStatus.BEING_MADE);
+            fail("expected IllegalStateException");
+        }
+        catch (IllegalStateException expected) {
+            // ok
+        }
+        assertEquals(OrderStatus.CANCELLED, o.getStatus());
+    }
+}

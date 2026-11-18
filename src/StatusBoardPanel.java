@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListCellRenderer;
-import javax.swing.DefaultListModel;
+import javax.swing.AbstractListModel;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -19,6 +19,9 @@ import javax.swing.SwingUtilities;
  * line (being made, then waiting in predicted order) and the orders ready
  * for pickup. Rows are color-coded by status (a stretch goal from our scope
  * doc). Redraws itself whenever the model changes.
+ *
+ * <p>It keeps no copy of model state: each list's rows are rebuilt from the
+ * model every time Swing asks for them (see {@link BoardListModel}).
  */
 public class StatusBoardPanel extends JPanel implements OrderListener {
 
@@ -29,8 +32,8 @@ public class StatusBoardPanel extends JPanel implements OrderListener {
     static final Color EMPTY_COLOR = Color.GRAY;
 
     private final OrderController controller;
-    private final DefaultListModel<Row> lineModel = new DefaultListModel<>();
-    private final DefaultListModel<Row> readyModel = new DefaultListModel<>();
+    private final BoardListModel lineModel = new BoardListModel(false);
+    private final BoardListModel readyModel = new BoardListModel(true);
     private final JLabel titleLabel = new JLabel(" ");
 
     /**
@@ -58,37 +61,48 @@ public class StatusBoardPanel extends JPanel implements OrderListener {
         refresh();
     }
 
-    /** Rebuilds both lists from the selected hall. */
+    /** Tells both lists the model changed, so they read it again. */
     public void refresh() {
-        lineModel.clear();
-        readyModel.clear();
         DiningHallModel hall = controller.getSelectedHall();
-        if (hall == null) {
-            titleLabel.setText("Select a dining hall to see its board.");
-            return;
+        titleLabel.setText(hall == null
+            ? "Select a dining hall to see its board."
+            : hall.getHallName() + " status board");
+        lineModel.changed();
+        readyModel.changed();
+    }
+
+    /**
+     * Builds the board's rows from the model right now.
+     *
+     * @param ready true for the ready list, false for the line
+     * @return the rows, or one gray message row if the list is empty
+     */
+    private List<Row> rows(boolean ready) {
+        List<Row> rows = new ArrayList<>();
+        DiningHallModel hall = controller.getSelectedHall();
+        if (hall != null && ready) {
+            for (Order o : hall.getReadyOrders()) {
+                rows.add(new Row(o + "  READY", OrderStatus.READY));
+            }
         }
-        titleLabel.setText(hall.getHallName() + " status board");
-        for (Order o : hall.getOrdersBeingMade()) {
-            lineModel.addElement(new Row(o + "  BEING MADE  ~"
-                + hall.getWaitTime(o.getOrderNum()) + " min",
-                OrderStatus.BEING_MADE));
+        else if (hall != null) {
+            for (Order o : hall.getOrdersBeingMade()) {
+                rows.add(new Row(o + "  BEING MADE  ~"
+                    + hall.getWaitTime(o.getOrderNum()) + " min",
+                    OrderStatus.BEING_MADE));
+            }
+            for (Order o : hall.getWaitingLine()) {
+                rows.add(new Row(o + "  WAITING #"
+                    + hall.getPosition(o.getOrderNum()) + "  ~"
+                    + hall.getWaitTime(o.getOrderNum()) + " min",
+                    OrderStatus.WAITING));
+            }
         }
-        for (Order o : hall.getWaitingLine()) {
-            lineModel.addElement(new Row(o + "  WAITING #"
-                + hall.getPosition(o.getOrderNum()) + "  ~"
-                + hall.getWaitTime(o.getOrderNum()) + " min",
-                OrderStatus.WAITING));
+        if (rows.isEmpty()) {
+            rows.add(new Row(ready ? "No orders ready for pickup."
+                : "No orders in line.", null));
         }
-        for (Order o : hall.getReadyOrders()) {
-            readyModel.addElement(new Row(o + "  READY", OrderStatus.READY));
-        }
-        if (lineModel.isEmpty()) {
-            lineModel.addElement(new Row("No orders in line.", null));
-        }
-        if (readyModel.isEmpty()) {
-            readyModel.addElement(new Row("No orders ready for pickup.",
-                null));
-        }
+        return rows;
     }
 
     @Override
@@ -103,12 +117,12 @@ public class StatusBoardPanel extends JPanel implements OrderListener {
 
     /** @return the text of each row in the line list */
     List<String> getLineRows() {
-        return texts(lineModel);
+        return texts(rows(false));
     }
 
     /** @return the text of each row in the ready list */
     List<String> getReadyRows() {
-        return texts(readyModel);
+        return texts(rows(true));
     }
 
     /**
@@ -129,21 +143,45 @@ public class StatusBoardPanel extends JPanel implements OrderListener {
         }
     }
 
-    private static List<String> texts(DefaultListModel<Row> model) {
+    private static List<String> texts(List<Row> rows) {
         List<String> out = new ArrayList<>();
-        for (int i = 0; i < model.size(); i++) {
-            out.add(model.get(i).text);
+        for (Row row : rows) {
+            out.add(row.text);
         }
         return out;
     }
 
-    private static JPanel listPane(String title, DefaultListModel<Row> model) {
+    private static JPanel listPane(String title, BoardListModel model) {
         JList<Row> list = new JList<>(model);
         list.setCellRenderer(new StatusRenderer());
         JPanel pane = new JPanel(new BorderLayout());
         pane.setBorder(BorderFactory.createTitledBorder(title));
         pane.add(new JScrollPane(list), BorderLayout.CENTER);
         return pane;
+    }
+
+    /** A list model that asks the model for its rows on every read. */
+    private class BoardListModel extends AbstractListModel<Row> {
+        private final boolean ready;
+
+        BoardListModel(boolean ready) {
+            this.ready = ready;
+        }
+
+        void changed() {
+            fireContentsChanged(this, 0, Integer.MAX_VALUE);
+        }
+
+        @Override
+        public int getSize() {
+            return rows(ready).size();
+        }
+
+        @Override
+        public Row getElementAt(int index) {
+            List<Row> rows = rows(ready);
+            return index < rows.size() ? rows.get(index) : null;
+        }
     }
 
     /** One line on the board: its text and the status that sets its color. */

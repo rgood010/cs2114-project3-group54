@@ -92,4 +92,41 @@ public class ViewTest {
         assertEquals(2, board.getLineRows().size());
         assertEquals(1, board.getReadyRows().size());
     }
+
+    // ------------------------------------------- cancel a waiting order (D4)
+
+    @Test
+    public void cancelRepromptsNonNumberThenCancels() {
+        OrderController c = controller(false);
+        c.placeOrder("Burger", 1, false);
+        int num = c.getLastOrderNum();
+        KioskView view = new KioskView(c, new Scanner("abc\n" + num + "\n"),
+            out);
+        view.cancelOrder();
+        String text = bytes.toString();
+        assertTrue(text.contains("\"abc\" is not a whole number"));
+        assertTrue(text.contains("Order #" + num + " cancelled."));
+        assertEquals(OrderStatus.CANCELLED, hall.getStatus(num));
+    }
+
+    @Test
+    public void cancelBackCancelsNothing() {
+        OrderController c = controller(false);
+        c.placeOrder("Burger", 1, false);
+        int num = c.getLastOrderNum();
+        new KioskView(c, new Scanner("back\n"), out).cancelOrder();
+        assertTrue(bytes.toString().contains("Nothing cancelled."));
+        assertEquals(OrderStatus.WAITING, hall.getStatus(num));
+    }
+
+    @Test
+    public void statusBoardDropsCancelledOrder() {
+        OrderController c = controller(false);
+        StatusBoardView board = new StatusBoardView(c, out);
+        c.placeOrder("Burger", 1, false);
+        c.placeOrder("Pizza", 1, false);
+        c.cancelOrder(c.getLastOrderNum());
+        assertEquals(1, board.getLineRows().size());
+        assertTrue(board.getLineRows().get(0).contains("Burger"));
+    }
 }

@@ -141,4 +141,70 @@ public class OrderControllerTest {
         controller.reorderLast("55555");
         assertFalse(controller.lastActionSucceeded());
     }
+
+    // ------------------------------------------- cancel a waiting order (D4)
+
+    @Test
+    public void cancelOwnWaitingOrder() {
+        controller.selectHall("North Dining Hall");
+        controller.placeOrder("Burger", 1, true);
+        int num = controller.getLastOrderNum();
+        controller.cancelOrder(num);
+        assertTrue(controller.lastActionSucceeded());
+        assertEquals("Order #" + num + " cancelled.",
+            controller.getLastMessage());
+        assertEquals("Order #" + num + " at North Dining Hall: CANCELLED",
+            controller.lookupStatus(num));
+    }
+
+    @Test
+    public void cancelWithNoHallIsReported() {
+        controller.cancelOrder(1);
+        assertFalse(controller.lastActionSucceeded());
+        assertEquals("Select a dining hall first.",
+            controller.getLastMessage());
+    }
+
+    @Test
+    public void cancelUnknownOrderIsReported() {
+        controller.selectHall("North Dining Hall");
+        controller.cancelOrder(999);
+        assertFalse(controller.lastActionSucceeded());
+        assertEquals("Order not found.", controller.getLastMessage());
+    }
+
+    @Test
+    public void cancelOtherStudentsOrderIsReported() {
+        int num = north.placeOrder("99999", "Burger", 1, false);
+        controller.selectHall("North Dining Hall");
+        controller.cancelOrder(num);
+        assertFalse(controller.lastActionSucceeded());
+        assertTrue(controller.getLastMessage().contains("another student"));
+        assertEquals(OrderStatus.WAITING, north.getStatus(num));
+    }
+
+    @Test
+    public void cancelOrderBeingMadeIsReported() {
+        controller.selectHall("North Dining Hall");
+        controller.placeOrder("Burger", 1, true);
+        int num = controller.getLastOrderNum();
+        controller.startNextOrder();
+        controller.cancelOrder(num);
+        assertFalse(controller.lastActionSucceeded());
+        assertTrue(controller.getLastMessage()
+            .contains("can no longer be cancelled"));
+    }
+
+    @Test
+    public void kitchenCommandsReportResults() {
+        controller.selectHall("North Dining Hall");
+        controller.startNextOrder();
+        assertEquals("No orders are waiting.", controller.getLastMessage());
+        controller.finishOrder();
+        assertEquals("No orders are being made.", controller.getLastMessage());
+        controller.markSoldOut("Tacos");
+        assertFalse(controller.lastActionSucceeded());
+        controller.markSoldOut("Pizza");
+        assertTrue(controller.lastActionSucceeded());
+    }
 }

@@ -168,6 +168,39 @@ public class DiningHallModel {
     }
 
     /**
+     * Cancels a WAITING order for the student who placed it. The order
+     * leaves its line, so every order behind it moves up and waits less.
+     * The fairness counter is unchanged, because it counts orders the
+     * kitchen started and this order never started.
+     *
+     * @param orderNum  the order to cancel
+     * @param studentId the student asking to cancel
+     * @throws IllegalArgumentException if the student ID is blank or the
+     *                                  order is unknown at this hall
+     * @throws IllegalStateException    if another student placed the order,
+     *                                  or it is no longer WAITING
+     */
+    public void cancelOrder(int orderNum, String studentId) {
+        if (studentId == null || studentId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Student ID is required");
+        }
+        Order target = find(orderNum);
+        if (!target.getStudentId().equals(studentId.trim())) {
+            throw new IllegalStateException("Order #" + orderNum
+                + " was placed by another student");
+        }
+        if (target.getStatus() != OrderStatus.WAITING) {
+            throw new IllegalStateException("Order #" + orderNum + " is "
+                + target.getStatus() + " and can no longer be cancelled");
+        }
+        LinkedQueue<Order> line = target.isMobile() ? mobileQueue
+            : walkInQueue;
+        line.remove(target);
+        target.setStatus(OrderStatus.CANCELLED);
+        notifyListeners();
+    }
+
+    /**
      * Registers a listener once. Repeated registration has no effect.
      *
      * @param l the listener
@@ -196,7 +229,7 @@ public class DiningHallModel {
     /**
      * @param orderNum an order number at this hall
      * @return the predicted 1-based position in line, or 0 if the order is
-     *         being made or ready
+     *         being made, ready or cancelled
      * @throws IllegalArgumentException if the order is unknown here
      */
     public int getPosition(int orderNum) {
@@ -210,13 +243,15 @@ public class DiningHallModel {
 
     /**
      * @param orderNum an order number at this hall
-     * @return estimated minutes until the order is ready (0 if ready)
+     * @return estimated minutes until the order is ready (0 if ready or
+     *         cancelled)
      * @throws IllegalArgumentException if the order is unknown here
      */
     public int getWaitTime(int orderNum) {
         Order target = find(orderNum);
         switch (target.getStatus()) {
             case READY:
+            case CANCELLED:
                 return 0;
             case BEING_MADE:
                 int index = 0;
