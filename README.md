@@ -8,7 +8,7 @@ saved to a file so a student can reorder their last meal.
 
 **Deliverable 3 — First Prototype.** The core logic sits in a queue-backed model
 that runs without any view. A thin terminal view and a controller sit on top of
-it. There is no GUI yet.
+it. A Swing GUI (`GrubHubGUI`) now sits on the same controller and model.
 
 ---
 
@@ -33,7 +33,8 @@ bad input being rejected.
 - **Eclipse:** right-click the `test` folder → *Run As → JUnit Test*.
 - `DiningHallModelTest`, `LinkedQueueTest`, `OrderTest`, `MenuTest` and
   `OrderHistoryTest` test the model alone. `OrderControllerTest` and `ViewTest`
-  test the layers above it. There are 77 tests and all of them pass.
+  test the layers above it. `GuiTest` tests the Swing panels. There are 94
+  tests and all of them pass (the panel tests also pass headless).
 
 ### 3. The thin terminal view
 `GrubHubApp` is the full program. View → controller → model.
@@ -49,13 +50,29 @@ bad input being rejected.
   start the order → `8` finish it → `5` look up the order number → `0`
   save and quit. Run it again and choose `4` to reorder your last order.
 
+### 4. The Swing GUI
+`GrubHubGUI` opens one window with the order form (kiosk or mobile), the
+kitchen controls and the color-coded status board side by side. It uses the
+same model and controller as the terminal app.
+
+- **Eclipse:** right-click `src/GrubHubGUI.java` → *Run As → Java Application*.
+- **Terminal:**
+  ```bash
+  javac -d bin src/*.java && java -cp bin GrubHubGUI
+  ```
+- Enter a student ID and pick kiosk or mobile. Then choose a dining hall at the
+  top, order, and use the Kitchen buttons to start and finish orders. The
+  status board and "Your order" line update by themselves. History is saved
+  when you close the window.
+
 ### Layout (MVC)
 | Role | Classes |
 |---|---|
 | Model | `DiningHallModel`, `LinkedQueue<T>`, `Order`, `OrderStatus`, `Menu`, `OrderHistory`, `OrderListener` |
-| View | `KioskView`, `MobileView` (both extend `OrderFormView`), `StatusBoardView` |
+| View (terminal) | `KioskView`, `MobileView` (both extend `OrderFormView`), `StatusBoardView` |
+| View (Swing) | `KioskPanel`, `MobilePanel` (both extend `OrderFormPanel`), `StatusBoardPanel`, `KitchenPanel` |
 | Controller | `OrderController` |
-| Entry points | `GrubHubApp` (builds the halls and runs the terminal menu), `ModelDriver` (model-only demo) |
+| Entry points | `GrubHubApp` (builds the halls and runs the terminal menu), `GrubHubGUI` (Swing window), `ModelDriver` (model-only demo) |
 
 ### Rules as built
 - **Fairness:** the kitchen starts up to 3 mobile orders in a row, then 1 walk-in
@@ -173,18 +190,20 @@ Questions that came up later while writing the spec:
 - **No pickup.** Ready orders stay in `readyQueue` forever. The spec notes there
   is no pickup/removal command.
 - **No staff/student separation.** Kitchen actions (start, finish, sold out) are
-  in the same terminal menu as student ordering.
-- **History saves only on a clean quit** (`0`). If the program crashes or the
-  window is closed, that run's orders are lost.
+  in the same terminal menu as student ordering, and in the same GUI window.
+- **History saves only on a clean quit** (`0` in the terminal, closing the GUI
+  window). If the program crashes, that run's orders are lost.
 - **Order lookup only searches the selected hall.** An order placed at another
-  hall shows "Order not found." until you switch to that hall.
-- **Status board redraws after every change.** With several views active, the
-  terminal gets noisy.
+  hall shows "Order not found." until you switch to that hall. (The GUI's
+  "Your order" line does follow the order across a hall switch.)
+- **The terminal status board redraws after every change.** With several views
+  active, the terminal gets noisy. The GUI board doesn't have this problem.
 - **Wait time ignores parallel cooking**, as described above.
-- **No tests for `GrubHubApp`'s menu loop.** It is only checked by running it.
-- **Scope stretch goals not built yet:** most-ordered items, total spending,
-  color-coded status and the GUI (see Next Steps).
-- All 77 existing tests pass. No known crash on the MVP path or on the bad-input
+- **No tests for `GrubHubApp`'s menu loop or the GUI's start-up dialog.** They
+  are only checked by running them.
+- **Scope stretch goals not built yet:** most-ordered items and total spending
+  (see Next Steps).
+- All 94 tests pass. No known crash on the MVP path or on the bad-input
   cases from our scope (sold-out item, quantity over 20). The same goes for the
   extra cases we added (non-numeric quantity, unknown item, hall or order
   number).
@@ -238,8 +257,8 @@ the MVP.
 | …see total spending | Not built | **Dropping.** Menu items have no prices, so we'd have to add prices to `Menu`, `Order` and the save file. |
 | **Mobile Order Scheduling:** two FIFO lines, 3 mobile then 1 in-person, wait times use both lines | Built | Done |
 | **Order Status Pipeline:** waiting → being made → ready, kitchen limit, look up by order number | Built | Done |
-| …color-coded status | Not built (terminal only) | **Committing with the GUI.** |
-| **GUI:** separate in-person and mobile screens, plus a pickup display | Not built | **Committing if time allows**, after the change feature. Each screen would be a new `OrderListener` view calling the same controller, so the model shouldn't need changes. That makes it the best test of our MVC design. |
+| …color-coded status | Built in the GUI (`StatusBoardPanel`: waiting orange, being made blue, ready green) | Done |
+| **GUI:** separate in-person and mobile screens, plus a pickup display | Built (`GrubHubGUI` with `KioskPanel`/`MobilePanel`, `StatusBoardPanel`, `KitchenPanel`) | Done. Each screen is a new `OrderListener` view calling the same controller. The model needed no changes; the only non-view edit was moving the hall setup into `GrubHubApp.createHalls` so both apps share it. |
 | Pickup / clearing ready orders (not in scope; we found it while building) | Not built | **Committing.** It's MVP step 1 above. |
 | Second status board / parallel-kitchen wait times (came up in the spec) | Not built | **Dropping** for now. |
 
@@ -295,9 +314,18 @@ the MVP.
 | `test/DiningHallModelTest.java` | Isabella | GenAI-assisted from the spec test plan. Ran it. |
 | `test/OrderControllerTest.java` | Jonathan | GenAI-assisted from the spec test plan. Ran it. |
 | `test/ViewTest.java` | Jonathan | GenAI-assisted. Ran it. |
+| `src/GrubHubGUI.java` | Jonathan | Generated with GenAI (Swing GUI stretch goal). |
+| `src/OrderFormPanel.java` | Jonathan | Generated with GenAI. |
+| `src/KioskPanel.java` | Jonathan | Generated with GenAI. |
+| `src/MobilePanel.java` | Jonathan | Generated with GenAI. |
+| `src/StatusBoardPanel.java` | Jonathan | Generated with GenAI. |
+| `src/KitchenPanel.java` | Jonathan | Generated with GenAI. |
+| `test/GuiTest.java` | Jonathan | Generated with GenAI. Ran it. |
 
 **GenAI note:** We used Claude (Anthropic) in Claude Code. We gave it our
 Deliverable 2 specification and our partial `LinkedQueue`, and it wrote most of
-the class and test code from that spec. It also drafted this README. We
+the class and test code from that spec. It also drafted this README. Later
+we asked it to build a Swing GUI for all of the views on top of the same
+controller and model. We
 reviewed the generated code against the spec, ran the tests and the program,
 and made our own edits (for example `OrderTest`).

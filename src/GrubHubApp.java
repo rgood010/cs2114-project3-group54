@@ -31,6 +31,19 @@ public class GrubHubApp {
     public GrubHubApp(Scanner in, PrintStream out) {
         this.in = in;
         this.out = out;
+        halls.putAll(createHalls(history));
+    }
+
+    /**
+     * Builds the dining hall directory. The terminal app and the Swing GUI
+     * both use this, so they always show the same halls and menus.
+     *
+     * @param history the history shared by all halls
+     * @return the halls, keyed by name, in display order
+     */
+    public static Map<String, DiningHallModel> createHalls(
+        OrderHistory history) {
+        Map<String, DiningHallModel> halls = new LinkedHashMap<>();
         halls.put("North Dining Hall", new DiningHallModel("North Dining Hall",
             new Menu("Cheeseburger", "Pizza", "Salad", "Fries"), history, 2,
             5));
@@ -40,6 +53,7 @@ public class GrubHubApp {
         halls.put("West End", new DiningHallModel("West End",
             new Menu("Steak Sandwich", "Pasta", "Burger", "Salad"), history, 2,
             6));
+        return halls;
     }
 
     /**
