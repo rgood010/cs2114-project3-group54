@@ -337,13 +337,13 @@ person reviewed or ran it.
 | `src/MobileView.java` | Ryan | Generated with GenAI. Ryan reviewed it. |
 | `src/StatusBoardView.java` | Shelby, Jonathan | Shelby: generated with GenAI, reviewed. Jonathan: D4 removed cached rows, GenAI-assisted. |
 | `src/GrubHubApp.java` | Ryan, Jonathan | Ryan: generated with GenAI, reviewed, ran the MVP path by hand. Jonathan: `createHalls` and cancel option, GenAI-assisted. |
-| `src/ModelDriver.java` | Jonathan | GenAI-assisted. Ran it. |
-| `src/GrubHubGUI.java` | Jonathan | Generated with GenAI (Swing GUI). Ran it. |
+| `src/ModelDriver.java` | Isabella | GenAI-assisted. Ran it. |
+| `src/GrubHubGUI.java` | Shelby | Generated with GenAI (Swing GUI). Ran it. |
 | `src/OrderFormPanel.java` | Jonathan | Generated with GenAI. D4 cancel button. Ran it. |
-| `src/KioskPanel.java` | Jonathan | Generated with GenAI. |
+| `src/KioskPanel.java` | Ryan | Generated with GenAI. |
 | `src/MobilePanel.java` | Jonathan | Generated with GenAI. |
-| `src/StatusBoardPanel.java` | Jonathan | Generated with GenAI. Ran it. |
-| `src/KitchenPanel.java` | Jonathan | Generated with GenAI. Ran it. |
+| `src/StatusBoardPanel.java` | Isabella | Generated with GenAI. Ran it. |
+| `src/KitchenPanel.java` | Shelby | Generated with GenAI. Ran it. |
 | `src/MenuComboModel.java` | Jonathan | Generated with GenAI. |
 | `test/LinkedQueueTest.java` | Jonathan | GenAI-assisted from the spec test plan. D4: remove and interleaving tests. Ran it. |
 | `test/OrderTest.java` | Isabella, Jonathan | Jonathan: GenAI-assisted first version. Isabella: expanded, restructured and added the stage-skipping exception tests. Jonathan: D4 cancel tests, GenAI-assisted. |
